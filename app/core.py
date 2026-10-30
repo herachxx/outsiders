@@ -7,6 +7,7 @@ from .schemas import TriageRequest
 from .priority import route, MANDATORY_HUMAN
 from .preprocess import before_admin, player_text as extract_player_text, normalize
 from .language import detect, language
+from .facts import extract_facts
 
 
 CATEGORY_PATTERNS = {
@@ -51,6 +52,7 @@ class TriageService:
 
     def triage(self, payload: dict | TriageRequest) -> dict:
         request = payload if isinstance(payload, TriageRequest) else TriageRequest.model_validate(payload)
+        facts = extract_facts(request)
         player_text = extract_player_text(request.messages)
         search_text = normalize(player_text)
         language_decision = detect(player_text)
@@ -111,7 +113,7 @@ class TriageService:
                 "nickname": request.reported_nick if request.kind == "complaint" else None,
                 "rule_refs": claimed_refs,
                 "has_evidence": has_attachments,
-                "claims": [player_text] if player_text else [],
+                "claims": [fact.value for fact in facts if fact.kind == 'claim'],
             },
             "draft_reply": {"lang": lang, "text": draft, "cited": cited},
             "needs_human": needs_human,
