@@ -25,4 +25,4 @@ include = ["app*", "scripts*"]
 pythonpath = ["."]
 
 [tool.setuptools.package-data]
-app = ["templates/*.json"]
+app = ["templates/*.json", "ui/*.html", "ui/*.css", "ui/*.js"]

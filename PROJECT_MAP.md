@@ -25,6 +25,7 @@ outsiders/
 │   ├── __init__.py
 │   ├── schemas.py               строгие модели входа и двух форматов ответа
 │   ├── api.py                   POST /triage; GET /health
+│   ├── ui/                      локальная очередь, редактор, сохранение в браузере
 │   ├── batch.py                 JSONL/GZ → JSONL, одна строка на входную
 │   ├── core.py                  общий TriageService, эвристики, язык, черновик
 │   ├── safety.py                финальная проверка шаблона, цитат и fallback
@@ -56,6 +57,7 @@ outsiders/
 │   └── annotation-guide.md     категории, приоритеты, инструкция B1
 └── tests/
     ├── test_core.py            безопасность, правила, API и batch
+    ├── test_ui.py              статика, проверка правок и отсутствие правил
     ├── test_benchmark.py       процентили, ошибки и приватность отчёта
     ├── test_draft_evaluation.py слепой пакет, парность, валидация оценок
     ├── test_safety.py          опасный текст, подмена цитат и генератора
@@ -148,3 +150,5 @@ D4 технически готов: scripts/evaluate_drafts.py, tests/test_draft
 E2: scripts/benchmark.py, tests/test_benchmark.py, docs/performance.md. Выполнен локальный baseline-прогон 1000 valid, 1/5/20 потоков, p95 до 0,54 мс, ошибок 0, человек 100%; отчёт ../private/benchmark-e2-v1.json. HTTP/очередь и раздельное время стадий не измерены. Следующий этап E3 — воспроизводимая сборка и инструкция сдачи; UI E1 пока не реализован.
 
 E3 технически готов: requirements-lock.txt, grand-predict entrypoint, scripts/run.ps1, Makefile, docs/submission.md. Wheel установлен в чистый venv ../private/e3-env; импорт/шаблоны/API smoke, 1000 valid CLI и runner без ошибок. 108 тестов; pip check OK. Make недоступен, другая машина не проверена. Следующий возможный этап — E1, локальный интерфейс администратора; качество всё ещё ждёт разметки и экспертных оценок.
+
+E1: app/ui/index.html, style.css, app.js; POST /draft/check в api.py. Локальная очередь p0–p3, исходник/цитаты/reasons, редактор, localStorage по кнопке, локальная метка эскалации. tests/test_ui.py, docs/ui.md. 111 тестов, JS syntax, wheel assets проверены; браузерная проверка заблокирована средой. Следующий шаг — ручная проверка UI и завершение разметки/оценок; optional E1b (FAQ) ещё нет.

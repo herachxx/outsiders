@@ -10,6 +10,15 @@ from .rules import RuleIndex
 from .schemas import TriageRequest, TriageResponse, SubmissionResponse
 from .submission import to_submission
 from .classifier import CategoryClassifier
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
+from .schemas import StrictModel, Draft
+
+
+class DraftCheckRequest(StrictModel):
+    request: TriageRequest
+    draft: Draft
 
 
 def create_app(service: TriageService | None = None) -> FastAPI:
@@ -34,6 +43,22 @@ def create_app(service: TriageService | None = None) -> FastAPI:
                 history.close()
 
     app = FastAPI(title='Grand Mobile Support Copilot', version='0.1.0', lifespan=lifespan)
+    ui_path = Path(__file__).parent / 'ui'
+    app.mount('/ui', StaticFiles(directory=ui_path), name='ui')
+
+    @app.get('/', include_in_schema=False)
+    def dashboard():
+        return FileResponse(ui_path / 'index.html', headers={'Cache-Control': 'no-store'})
+
+    @app.post('/draft/check')
+    def check_edited_draft(payload: DraftCheckRequest):
+        if not service.rules.rules:
+            raise HTTPException(status_code=503, detail='Rules are not loaded')
+        from .safety import check_draft
+        result = service.triage(payload.request)
+        checked, reasons = check_draft(payload.draft.model_dump(), service.rules, payload.request,
+                                      result['category'], result['lang'], result['extracted']['has_evidence'])
+        return {'approved': not reasons, 'draft': checked, 'reasons': reasons}
 
     @app.post("/triage", response_model=SubmissionResponse | TriageResponse)
     def triage(request: TriageRequest, format: Literal['submission', 'internal'] = 'submission',
