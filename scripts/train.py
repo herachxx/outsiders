@@ -111,7 +111,7 @@ def grouped_validation(rows, kind, seed):
     return result
 
 
-def train_classifier(tasks, manifest, gold, seed=42):
+def train_classifier(tasks, manifest, gold, seed=42, calibrate=False):
     import sklearn
     import numpy
     import scipy
@@ -129,6 +129,7 @@ def train_classifier(tasks, manifest, gold, seed=42):
     report['train_fingerprint'] = hashlib.sha256(json.dumps(rows, sort_keys=True,
                                                           ensure_ascii=False).encode()).hexdigest()
     models = {}
+    calibrated_kinds = []
     for kind in ('complaint', 'report'):
         selected = [r for r in rows if r['kind'] == kind]
         counts = dict(sorted(Counter(r['category'] for r in selected).items()))
@@ -140,12 +141,19 @@ def train_classifier(tasks, manifest, gold, seed=42):
             info.update(status='not_trained', reason='requires_at_least_two_classes')
             continue
         info.update(status='trained', validation=grouped_validation(selected, kind, seed))
-        model = make_pipeline(seed)
-        model.fit([r['text'] for r in selected], [r['category'] for r in selected])
+        if calibrate:
+            from app.calibration import fit_calibrated
+            model, info['calibration'] = fit_calibrated(selected, seed)
+            calibrated_kinds.append(kind)
+        else:
+            model = make_pipeline(seed)
+            model.fit([r['text'] for r in selected], [r['category'] for r in selected])
         models[kind] = model
     if not models:
         raise ValueError('No trainable kind: fill gold labels with at least two classes in train')
-    return CategoryClassifier(models), report
+    report['calibrated_kinds'] = calibrated_kinds
+    report['confidence_calibrated'] = bool(calibrated_kinds)
+    return CategoryClassifier(models, calibrated_kinds), report
 
 
 def save_training(model, report, output):
@@ -164,6 +172,7 @@ def main():
     for name in ('tasks', 'manifest', 'gold', 'output'):
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--calibrate', action='store_true', help='Reserve separate reporter groups for sigmoid calibration and check')
     args = parser.parse_args()
     try:
         target = private_path(args.output)
@@ -175,7 +184,7 @@ def main():
         if not gold:
             parser.exit(2, 'No gold labels: complete B1 annotation and merge_labels before training.\n')
         model, report = train_classifier(list(read_records(args.tasks)), manifest,
-                                         gold, args.seed)
+                                         gold, args.seed, args.calibrate)
         save_training(model, report, target)
     except (ValueError, KeyError, TypeError) as error:
         # Do not echo validation payloads or raw ticket text to the console.

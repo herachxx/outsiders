@@ -113,3 +113,5 @@ git diff --check
 ```
 
 Установка и пример batch — в `README.md`; разметка — в `docs/annotation-guide.md`; B2 — в `docs/training.md`. Для полной проверки B2 нужен extra `ml`. Счётчики тестов и историю коммитов здесь не дублируем: проверять командами.
+
+Обновление B3: `app/calibration.py` и `tests/test_calibration.py` — отдельные группы fit/calibration/check внутри train, sigmoid, reliability bins и ECE. `scripts.train --calibrate` создаёт модель с вероятностями категории. При защитной замене категории confidence=0. Реальная калибровка ждёт gold. Следующий технический шаг — независимая оценка калиброванного режима по языкам; текущий evaluate оценивает некалиброванный режим.

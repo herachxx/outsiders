@@ -25,8 +25,14 @@ def make_pipeline(seed=42):
 
 
 class CategoryClassifier:
-    def __init__(self, models):
+    def __init__(self, models, calibrated_kinds=()):
         self.models = models
+        self.calibrated_kinds = set(calibrated_kinds)
+
+    def confidence(self, kind, text):
+        if kind not in self.calibrated_kinds or self.predict(kind, text) is None:
+            return 0.0
+        return float(self.models[kind].predict_proba([normalize(text)]).max())
 
     def predict(self, kind, text):
         model = self.models.get(kind)
@@ -61,4 +67,7 @@ class CategoryClassifier:
             allowed = {c for c in get_args(Category) if c.startswith(kind + '.')}
             if len(classes) < 2 or not classes <= allowed:
                 raise ValueError('Invalid model classes')
-        return cls(models)
+        calibrated = artifact.get('calibrated_kinds', [])
+        if not isinstance(calibrated, list) or not set(calibrated) <= set(models):
+            raise ValueError('Invalid calibrated model kinds')
+        return cls(models, calibrated)

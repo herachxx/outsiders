@@ -81,8 +81,11 @@ class TriageService:
         rule_ref = (request.rule_refs_raw or "").strip()
         claimed_refs = re.findall(r"\b\d+(?:\.\d+){1,2}\b", rule_ref)
         reasons = ["history_unavailable", *routing.reasons]
+        confidence = 0.0
+        if predicted and not safety_override and hasattr(self.classifier, 'confidence'):
+            confidence = self.classifier.confidence(request.kind, search_text)
         if self.classifier:
-            reasons.append('classifier_uncalibrated' if predicted else 'classifier_fallback')
+            reasons.append(('classifier_calibrated' if confidence else 'classifier_uncalibrated') if predicted else 'classifier_fallback')
         if safety_override:
             reasons.append('sensitive_category_override')
         if lang in ("lat", "und"):
@@ -123,7 +126,7 @@ class TriageService:
             },
             "draft_reply": {"lang": lang, "text": draft, "cited": cited},
             "needs_human": needs_human,
-            "confidence": 0.0,  # Neither heuristic nor B2 model is calibrated.
+            "confidence": confidence,  # Probability of category only, not draft correctness.
             "reasons": reasons,
         }
 
