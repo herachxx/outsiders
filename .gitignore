@@ -11,3 +11,5 @@ reports/private/
 .env
 *.egg-info/
 *.joblib
+build/
+dist/

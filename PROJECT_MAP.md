@@ -18,6 +18,8 @@ outsiders/
 ├── PROJECT_MAP.md               навигация и актуальное состояние
 ├── README.md                    установка и запуск
 ├── pyproject.toml               зависимости, пакет, pytest
+├── requirements-lock.txt        точные версии проверенного Windows/Python окружения
+├── Makefile                     predict/test/serve для GNU Make
 ├── .gitignore                   исключения данных и окружения
 ├── app/
 │   ├── __init__.py
@@ -34,6 +36,7 @@ outsiders/
 │   ├── rules.py                 индекс правил и составной ключ цитаты
 │   └── submission.py            преобразование цитат в строковый формат сдачи
 ├── scripts/
+│   ├── run.ps1                  единый Windows predict/serve/test
 │   ├── __init__.py
 │   ├── inspect_data.py          диагностика данных, правил и taxonomy
 │   ├── sample_for_labeling.py   слепая выборка, manifest, пустые метки
@@ -143,3 +146,5 @@ D3: `app/safety.py`, `tests/test_safety.py`, `docs/safety.md` — строгая
 D4 технически готов: scripts/evaluate_drafts.py, tests/test_draft_evaluation.py, docs/eval-rubric.md. Приватный пакет 100 пар: ../private/draft-review-d4-v1; оценки пустые, candidate эвристический. Исключены holdout-группы B1. Следующий этап — E2, измерение времени и стоимости; экспертная оценка D4 требует людей.
 
 E2: scripts/benchmark.py, tests/test_benchmark.py, docs/performance.md. Выполнен локальный baseline-прогон 1000 valid, 1/5/20 потоков, p95 до 0,54 мс, ошибок 0, человек 100%; отчёт ../private/benchmark-e2-v1.json. HTTP/очередь и раздельное время стадий не измерены. Следующий этап E3 — воспроизводимая сборка и инструкция сдачи; UI E1 пока не реализован.
+
+E3 технически готов: requirements-lock.txt, grand-predict entrypoint, scripts/run.ps1, Makefile, docs/submission.md. Wheel установлен в чистый venv ../private/e3-env; импорт/шаблоны/API smoke, 1000 valid CLI и runner без ошибок. 108 тестов; pip check OK. Make недоступен, другая машина не проверена. Следующий возможный этап — E1, локальный интерфейс администратора; качество всё ещё ждёт разметки и экспертных оценок.

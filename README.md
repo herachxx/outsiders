@@ -6,6 +6,8 @@
 
 ## Быстрый старт (PowerShell)
 
+Проверенная установка с фиксированными версиями, wheel и едиными командами — в [инструкции E3](docs/submission.md). Optional команда после установки: `grand-predict`. Windows runner: `scripts/run.ps1`; для GNU Make предусмотрен `make predict IN=... OUT=... RULES=...`.
+
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e '.[dev]'
