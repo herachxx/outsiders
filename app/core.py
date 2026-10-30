@@ -28,23 +28,6 @@ CATEGORY_PATTERNS = {
     ],
 }
 
-RELEVANT_REFS = {
-    "complaint.cheat": {"5.2"},
-    "complaint.insult": {"2.1", "2.4", "2.6"},
-    "complaint.dm": {"5.3", "5.4"},
-    "complaint.scam": {"4.1", "4.2"},
-    "complaint.rmt_ads": {"2.3", "4.4"},
-}
-
-PREFERRED_SECTIONS = {
-    "complaint.cheat": 30,
-    "complaint.insult": 30,
-    "complaint.dm": 30,
-    "complaint.scam": 30,
-    "complaint.rmt_ads": 30,
-}
-
-
 class TriageService:
     def __init__(self, rules: RuleIndex, classifier=None):
         self.rules = rules
@@ -82,19 +65,21 @@ class TriageService:
         if language_decision.mixed:
             reasons.append('language_mixed')
         cited = []
-        for ref in claimed_refs:
+        for ref in dict.fromkeys(claimed_refs):
             candidates = [rule for rule in self.rules.rules if rule.ref == ref]
             if not candidates:
                 reasons.append("rule_ambiguous_or_unknown")
                 continue
-            if ref not in RELEVANT_REFS.get(category, set()):
+            if not self.rules.search(search_text, category, ref=ref):
                 reasons.append("rule_irrelevant_to_category")
                 continue
-            rule = self.rules.resolve(ref, section_id=PREFERRED_SECTIONS.get(category))
+            rule = self.rules.relevant_rule(search_text, category, ref)
             if rule is None:
                 reasons.append("rule_ambiguous_or_unknown")
                 continue
-            cited.append(rule.citation())
+            citation = rule.citation()
+            if self.rules.validate_citation(citation):
+                cited.append(citation)
         if rule_ref and not claimed_refs:
             reasons.append("rule_unparsed")
         if request.kind == "complaint":

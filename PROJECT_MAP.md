@@ -80,7 +80,7 @@ core → preprocess → опциональный classifier → защитные
 | Категория, язык, черновик | `core.py` | `test_core.py` |
 | Обучение и признаки | `preprocess.py`, `classifier.py`, `scripts/train.py`, `docs/training.md` | `test_classifier.py`, `test_core.py` |
 | Приоритет и эскалация | `priority.py`, `docs/annotation-guide.md` | `test_priority.py` |
-| Цитаты | `rules.py`, таблицы соответствий в `core.py` | `test_core.py` |
+| Цитаты | `rules.py`, `core.py`, `docs/retrieval.md` | `test_rules.py`, `test_core.py` |
 | Данные и разметка | скрипты в `scripts/`, data-contract и annotation-guide | `test_data_contract.py`, `test_sampling.py` |
 
 Имена модулей в таблице относятся к `app/`, имена тестов — к `tests/`.
@@ -127,3 +127,5 @@ C1: `app/language.py` — консервативный детектор с Langu
 C2 выполнен: `app/facts.py` — claim/reported_player_statement/metadata с исходным полем и offsets, без verified; `tests/test_facts.py`, `docs/facts.md`. В core extracted.claims содержит отдельные утверждения player. Название C2 ранее ошибочно связывалось с retrieval; источник порядка этапов — implementation-plan.md.
 
 C3 частично реализован: точные нормализованные повторы одного заявителя, SQLite для HTTP, хронологический batch, 5 обращений за 60 минут. Включение opt-in, подробности docs/history.md. Семантические пары и precision/recall ожидают разметки. Следующий этап основного пути — D1, индекс и релевантность правил.
+
+D1: `app/rules.py` содержит лексический search, отказ при неоднозначных разделах и validate_citation; `tests/test_rules.py`, `docs/retrieval.md`. Из core удалены фиксированные ref/category и section_id=30. Relevance@k на реальных gold-парах ещё не измерена. Следующий этап D2 — содержательные черновики по типу обращения.

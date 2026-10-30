@@ -3,6 +3,19 @@
 from dataclasses import dataclass
 import hashlib
 import json
+import re
+
+TOPICS = {
+    'complaint.cheat': r'\bчит|cheat|сторонн.{0,20}(по|программ)',
+    'complaint.insult': r'оскорб|нецензур|матер|расизм',
+    'complaint.dm': r'\bdm\b|\bдм\b|убийств|убивать|урон',
+    'complaint.scam': r'обман|мошен|вымог',
+    'complaint.rmt_ads': r'реклам|реальн.{0,15}деньг|продаж.{0,15}аккаунт',
+}
+
+
+def terms(text):
+    return {word[:5] for word in re.findall(r'[а-яa-z]{3,}', text.casefold().replace('ё', 'е'))}
 
 
 @dataclass(frozen=True)
@@ -51,3 +64,36 @@ class RuleIndex:
             return self.by_key.get((section_id, ref))
         matches = [rule for rule in self.rules if rule.ref == ref]
         return matches[0] if len(matches) == 1 else None
+
+    def search(self, text, category, ref=None, limit=5):
+        """Lexical candidates only; scores are not calibrated relevance probabilities."""
+        pattern = TOPICS.get(category)
+        if not pattern:
+            return []
+        query = terms(text)
+        ranked = []
+        for rule in self.rules:
+            if ref is not None and rule.ref != ref:
+                continue
+            content = rule.text.casefold().replace('ё', 'е')
+            if not re.search(pattern, content):
+                continue
+            # Do not infer a prohibition from a definition or an explicit permission.
+            if not re.search(r'запрещ|нельзя|недопуст|не допуска', content):
+                continue
+            if re.search(r'не запрещ|разреш|допускается', content.replace('не допускается', '')):
+                continue
+            overlap = len(query & terms(content))
+            ranked.append((rule, overlap))
+        ranked.sort(key=lambda item: (-item[1], item[0].section_id, item[0].ref))
+        return ranked[:limit]
+
+    def relevant_rule(self, text, category, ref):
+        candidates = self.search(text, category, ref=ref, limit=len(self.rules))
+        # Lexical ranking cannot prove section scope; multiple matches require a human.
+        return candidates[0][0] if len(candidates) == 1 else None
+
+    def validate_citation(self, citation):
+        rule = self.by_key.get((citation.get('section_id'), citation.get('ref')))
+        return bool(rule and citation.get('rules_hash') == rule.rules_hash
+                    and citation.get('excerpt') == rule.text[:180])

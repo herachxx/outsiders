@@ -31,7 +31,7 @@ def test_pdf_attachment_count_is_accepted():
 
 def test_submission_and_http_batch_agree():
     service = TriageService(RuleIndex.from_data({'rules': [
-        {'id': 30, 'category': 'Synthetic', 'points': [{'ref': '2.1', 'text': 'Synthetic rule'}]}
+        {'id': 30, 'category': 'Synthetic', 'points': [{'ref': '2.1', 'text': 'Запрещены оскорбления игроков.'}]}
     ]}))
     internal = service.triage(request())
     parsed = TriageResponse.model_validate(internal)
@@ -52,7 +52,7 @@ def test_response_rejects_invalid_category_and_confidence():
 
 def test_citation_export_preserves_internal_source():
     service = TriageService(RuleIndex.from_data({'rules': [
-        {'id': 30, 'category': 'Synthetic', 'points': [{'ref': '2.1', 'text': 'Synthetic rule'}]}
+        {'id': 30, 'category': 'Synthetic', 'points': [{'ref': '2.1', 'text': 'Запрещены оскорбления игроков.'}]}
     ]}))
     data = {'kind': 'complaint', 'messages': [{'role': 'player', 'text': 'оскорбил'}], 'rule_refs_raw': '2.1'}
     internal = service.triage(data)
