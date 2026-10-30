@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from .core import TriageService
 from .rules import RuleIndex
@@ -15,11 +15,15 @@ def create_app(service: TriageService | None = None) -> FastAPI:
 
     @app.post("/triage")
     def triage(request: TriageRequest) -> dict:
+        if not service.rules.rules:
+            raise HTTPException(status_code=503, detail="Rules are not loaded")
         return service.triage(request)
 
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok", "rules_loaded": bool(service.rules.rules)}
+        if not service.rules.rules:
+            raise HTTPException(status_code=503, detail="Rules are not loaded")
+        return {"status": "ok", "rules_loaded": True}
 
     return app
 

@@ -53,7 +53,7 @@ def test_attachment_count_does_not_prove_violation():
     )
     assert result["extracted"]["has_evidence"] is True
     assert result["needs_human"] is True
-    assert result["draft_reply"]["cited"] == []
+    assert result["draft_reply"]["cited"][0]["section_id"] == 30
     assert "скриншотам видно" not in result["draft_reply"]["text"].lower()
 
 
@@ -64,6 +64,22 @@ def test_unique_relevant_rule_is_cited_with_section_and_hash():
     assert result["draft_reply"]["cited"][0]["section_id"] == 30
     assert result["draft_reply"]["cited"][0]["ref"] == "5.2"
     assert result["draft_reply"]["cited"][0]["rules_hash"]
+
+
+def test_ambiguous_ref_is_resolved_only_with_known_category():
+    result = TriageService(RuleIndex.from_data(RULES)).triage(
+        ticket("Меня оскорбили в чате", rule_refs_raw="2.1")
+    )
+    assert result["category"] == "complaint.insult"
+    assert result["draft_reply"]["cited"][0]["section_id"] == 30
+    assert "2.1" in result["draft_reply"]["text"]
+
+
+def test_unrelated_rule_is_not_cited_even_if_it_exists():
+    result = TriageService(RuleIndex.from_data(RULES)).triage(
+        ticket("Он использует читы", rule_refs_raw="2.1")
+    )
+    assert result["draft_reply"]["cited"] == []
 
 
 def test_prompt_injection_cannot_create_a_rule():
@@ -88,6 +104,12 @@ def test_api_and_service_same_response():
     assert response.status_code == 200
     assert response.json() == service.triage(request)
     assert client.post("/triage", json={"kind": "report", "messages": []}).status_code == 422
+
+
+def test_api_rejects_triage_when_rules_are_missing():
+    client = TestClient(create_app(TriageService(RuleIndex([]))))
+    assert client.get("/health").status_code == 503
+    assert client.post("/triage", json=ticket("Как дела?", kind="report")).status_code == 503
 
 
 def test_batch_keeps_input_order_and_reports_bad_line():

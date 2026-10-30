@@ -32,6 +32,14 @@ RELEVANT_REFS = {
     "complaint.rmt_ads": {"2.3", "4.4"},
 }
 
+PREFERRED_SECTIONS = {
+    "complaint.cheat": 30,
+    "complaint.insult": 30,
+    "complaint.dm": 30,
+    "complaint.scam": 30,
+    "complaint.rmt_ads": 30,
+}
+
 
 def normalize(text: str) -> str:
     """Normalize a search copy without changing the original player text."""
@@ -69,8 +77,22 @@ class TriageService:
         reasons = ["history_unavailable"]
         if lang in ("lat", "und"):
             reasons.append("language_uncertain")
-        if rule_ref and any(self.rules.resolve(ref) is None for ref in claimed_refs):
-            reasons.append("rule_ambiguous_or_unknown")
+        cited = []
+        for ref in claimed_refs:
+            candidates = [rule for rule in self.rules.rules if rule.ref == ref]
+            if not candidates:
+                reasons.append("rule_ambiguous_or_unknown")
+                continue
+            if ref not in RELEVANT_REFS.get(category, set()):
+                reasons.append("rule_irrelevant_to_category")
+                continue
+            rule = self.rules.resolve(ref, section_id=PREFERRED_SECTIONS.get(category))
+            if rule is None:
+                reasons.append("rule_ambiguous_or_unknown")
+                continue
+            cited.append(rule.citation())
+        if rule_ref and not claimed_refs:
+            reasons.append("rule_unparsed")
         if category in {"report.account", "report.payment", "complaint.admin"}:
             reasons.append("mandatory_human")
         if request.kind == "complaint":
@@ -81,11 +103,9 @@ class TriageService:
         if category.endswith("offtopic") or category.endswith("invalid"):
             needs_human = True
         draft = self._draft(lang, category, needs_human)
-        cited = []
-        for ref in claimed_refs:
-            rule = self.rules.resolve(ref)
-            if rule and ref in RELEVANT_REFS.get(category, set()):
-                cited.append(rule.citation())
+        if cited and lang == "ru":
+            refs = ", ".join(f"{item['section_id']}/{item['ref']}" for item in cited)
+            draft += f" Указанные пункты правил ({refs}) будут проверены администратором."
         return {
             "lang": lang,
             "category": category,
