@@ -129,3 +129,5 @@ C2 выполнен: `app/facts.py` — claim/reported_player_statement/metadata
 C3 частично реализован: точные нормализованные повторы одного заявителя, SQLite для HTTP, хронологический batch, 5 обращений за 60 минут. Включение opt-in, подробности docs/history.md. Семантические пары и precision/recall ожидают разметки. Следующий этап основного пути — D1, индекс и релевантность правил.
 
 D1: `app/rules.py` содержит лексический search, отказ при неоднозначных разделах и validate_citation; `tests/test_rules.py`, `docs/retrieval.md`. Из core удалены фиксированные ref/category и section_id=30. Relevance@k на реальных gold-парах ещё не измерена. Следующий этап D2 — содержательные черновики по типу обращения.
+
+D2: `app/draft.py` и `app/templates/drafts.json` — шаблоны ru/kk/uz/en по типу обращения, дополнительные запросы при отсутствии метаданных, явный язык fallback. `tests/test_draft.py`, `docs/drafts.md`. Носители и администраторы ещё не оценивали тексты. Следующий этап D3 — проверка безопасности ответа.

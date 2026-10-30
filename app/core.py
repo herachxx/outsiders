@@ -8,6 +8,7 @@ from .priority import route, MANDATORY_HUMAN
 from .preprocess import before_admin, player_text as extract_player_text, normalize
 from .language import detect, language
 from .facts import extract_facts
+from .draft import build_draft
 
 
 CATEGORY_PATTERNS = {
@@ -85,10 +86,7 @@ class TriageService:
         if request.kind == "complaint":
             reasons.append("evidence_not_verified")
         needs_human = routing.needs_human or language_decision.uncertain
-        draft = self._draft(lang, category, needs_human)
-        if cited and lang == "ru":
-            refs = ", ".join(f"{item['section_id']}/{item['ref']}" for item in cited)
-            draft += f" Указанные пункты правил ({refs}) будут проверены администратором."
+        draft = build_draft(request, category, lang, has_attachments, cited)
         return {
             "lang": lang,
             "category": category,
@@ -100,7 +98,7 @@ class TriageService:
                 "has_evidence": has_attachments,
                 "claims": [fact.value for fact in facts if fact.kind == 'claim'],
             },
-            "draft_reply": {"lang": lang, "text": draft, "cited": cited},
+            "draft_reply": draft,
             "needs_human": needs_human,
             "confidence": confidence,  # Probability of category only, not draft correctness.
             "reasons": reasons,
@@ -112,21 +110,3 @@ class TriageService:
             if re.search(pattern, text):
                 return category
         return "complaint.other" if kind == "complaint" else "report.offtopic"
-
-    @staticmethod
-    def _draft(lang: str, category: str, needs_human: bool) -> str:
-        if lang == "kk":
-            return "Өтінішіңіз қабылданды. Оны әкімші тексереді."
-        if lang == "uz":
-            return "Murojaatingiz qabul qilindi. Uni administrator tekshiradi."
-        if lang == 'es':
-            return 'Hemos recibido tu solicitud. Un administrador la revisará.'
-        if lang == 'pt':
-            return 'Recebemos sua solicitação. Um administrador irá analisá-la.'
-        if lang in ("lat", "und", "en"):
-            return "Your request has been received. A support agent will review it."
-        if category == "report.offtopic":
-            return "Пожалуйста, уточните, что произошло и на каком сервере."
-        if needs_human:
-            return "Спасибо за обращение. Передаём его администратору для проверки."
-        return "Спасибо за вопрос. Администратор проверит информацию и ответит вам."

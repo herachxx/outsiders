@@ -1,0 +1,58 @@
+{
+  "ru": {
+    "payment": "Для проверки платежа укажите дату, сумму и номер операции. Приложите квитанцию, скрыв реквизиты карты и другие платёжные данные. Статус операции должен проверить администратор.",
+    "account": "Опишите, когда пропал доступ к аккаунту и какая ошибка появляется. Не отправляйте пароль, коды подтверждения или резервные коды. Восстановление доступа требует проверки администратором.",
+    "help": "Опишите последовательность действий перед проблемой и её результат. Укажите время и место в игре; если появляется ошибка, приведите её текст.",
+    "question": "Уточните, о какой функции или ситуации в игре идёт речь и что именно вы хотите узнать. Это поможет подготовить точный ответ.",
+    "admin": "Для проверки действий администратора опишите ситуацию и укажите время события. Решение по жалобе требует отдельной проверки.",
+    "complaint": "Опишите действия игрока и укажите время события. Обстоятельства и возможное нарушение должен проверить администратор.",
+    "other": "Уточните, что произошло и какая помощь нужна.",
+    "evidence_present": "Содержимое приложенных материалов ещё не проверено.",
+    "evidence_missing": "Если есть запись или снимки события, приложите их для проверки.",
+    "target_missing": "Укажите никнейм или игровой ID участника события.",
+    "server_missing": "Укажите сервер, на котором возникла ситуация.",
+    "rules": "Пункты правил ({refs}) приведены для проверки применимости администратором."
+  },
+  "kk": {
+    "payment": "Төлемді тексеру үшін күнін, сомасын және операция нөмірін көрсетіңіз. Карта деректерін жасырып, түбіртекті тіркеңіз. Операцияны әкімші тексеруі керек.",
+    "account": "Аккаунтқа кіру мүмкіндігі қашан жоғалғанын және қандай қате шығатынын жазыңыз. Құпиясөзді немесе растау кодтарын жібермеңіз. Қолжетімділікті қалпына келтіру үшін әкімшінің тексеруі қажет.",
+    "help": "Мәселе туындағанға дейінгі әрекеттеріңізді сипаттаңыз. Ойындағы уақыт пен орынды, қате болса, оның мәтінін көрсетіңіз.",
+    "question": "Ойынның қай мүмкіндігі немесе жағдайы туралы сұрап отырғаныңызды нақтылаңыз.",
+    "admin": "Әкімшінің әрекеттерін тексеру үшін жағдайды сипаттап, оқиға уақытын көрсетіңіз. Шағым бойынша жеке тексеру қажет.",
+    "complaint": "Ойыншының әрекеттерін сипаттап, оқиға уақытын көрсетіңіз. Жағдайды әкімші тексеруі керек.",
+    "other": "Не болғанын және қандай көмек керегін нақтылаңыз.",
+    "evidence_present": "Тіркелген материалдардың мазмұны әлі тексерілген жоқ.",
+    "evidence_missing": "Оқиғаның бейнежазбасы немесе скриншоттары болса, тексеру үшін тіркеңіз.",
+    "target_missing": "Оқиғаға қатысушының лақап атын немесе ойын ID нөмірін көрсетіңіз.",
+    "server_missing": "Жағдай туындаған серверді көрсетіңіз.",
+    "rules": "Ереже тармақтарының ({refs}) қолданылуын әкімші тексеруі керек."
+  },
+  "uz": {
+    "payment": "To‘lovni tekshirish uchun sana, summa va operatsiya raqamini ko‘rsating. Karta ma’lumotlarini yashirib, kvitansiyani ilova qiling. Operatsiyani administrator tekshirishi kerak.",
+    "account": "Hisobga kirish qachon yo‘qolganini va qanday xato chiqayotganini yozing. Parol yoki tasdiqlash kodlarini yubormang. Kirishni tiklash uchun administrator tekshiruvi zarur.",
+    "help": "Muammo yuz berishidan oldingi harakatlaringizni tasvirlang. O‘yindagi vaqt va joyni, xato bo‘lsa, uning matnini ko‘rsating.",
+    "question": "O‘yindagi qaysi funksiya yoki vaziyat haqida so‘rayotganingizni aniqlashtiring.",
+    "admin": "Administrator harakatlarini tekshirish uchun vaziyatni tasvirlab, voqea vaqtini ko‘rsating. Shikoyat alohida tekshiruvni talab qiladi.",
+    "complaint": "O‘yinchi harakatlarini tasvirlab, voqea vaqtini ko‘rsating. Vaziyatni administrator tekshirishi kerak.",
+    "other": "Nima bo‘lganini va qanday yordam kerakligini aniqlashtiring.",
+    "evidence_present": "Ilova qilingan materiallarning mazmuni hali tekshirilmagan.",
+    "evidence_missing": "Voqea yozuvi yoki skrinshotlari bo‘lsa, tekshirish uchun ilova qiling.",
+    "target_missing": "Voqea ishtirokchisining taxallusi yoki o‘yin ID raqamini ko‘rsating.",
+    "server_missing": "Vaziyat yuz bergan serverni ko‘rsating.",
+    "rules": "Qoida bandlarining ({refs}) qo‘llanishini administrator tekshirishi kerak."
+  },
+  "en": {
+    "payment": "Provide the payment date, amount and transaction reference. Attach a receipt with card details hidden. An administrator needs to check the payment status.",
+    "account": "Describe when you lost account access and the error shown. Do not send passwords or verification codes. Account recovery requires administrator review.",
+    "help": "Describe the steps before the problem, the in-game time and location, and any error message.",
+    "question": "Clarify which game feature or situation your question concerns and what you need to know.",
+    "admin": "Describe the administrator's actions and the time of the event. This complaint requires a separate review.",
+    "complaint": "Describe the player's actions and the time of the event. An administrator needs to review the circumstances.",
+    "other": "Please clarify what happened and what help you need.",
+    "evidence_present": "The contents of the attached materials have not been verified.",
+    "evidence_missing": "If available, attach a recording or screenshots of the event for review.",
+    "target_missing": "Provide the participant's nickname or in-game ID.",
+    "server_missing": "Specify the server where this happened.",
+    "rules": "An administrator needs to check whether rule references ({refs}) apply."
+  }
+}
