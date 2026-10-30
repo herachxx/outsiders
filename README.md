@@ -13,6 +13,8 @@ $env:GRAND_RULES_PATH = 'C:\path\outside\repo\rules.json'
 
 `POST http://127.0.0.1:8000/triage` принимает JSON обращения. `GET /health` показывает, загружены ли правила. Открытая схема API: `http://127.0.0.1:8000/docs`.
 
+По умолчанию API и batch выдают строковые номера в `draft_reply.cited` по примеру PDF. Для полного состава цитат используйте `?format=internal` или CLI `--format internal`. Подробности и ошибки: [контракт A2](docs/api-contract.md).
+
 Пакетный режим:
 
 ```powershell

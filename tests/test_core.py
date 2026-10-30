@@ -100,7 +100,7 @@ def test_api_and_service_same_response():
     service = TriageService(RuleIndex.from_data(RULES))
     client = TestClient(create_app(service))
     request = ticket("Как устроиться в полицию?", kind="report")
-    response = client.post("/triage", json=request)
+    response = client.post("/triage?format=internal", json=request)
     assert response.status_code == 200
     assert response.json() == service.triage(request)
     assert client.post("/triage", json={"kind": "report", "messages": []}).status_code == 422

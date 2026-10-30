@@ -114,7 +114,7 @@ class TriageService:
             "extracted": {
                 "nickname": request.reported_nick if request.kind == "complaint" else None,
                 "rule_refs": claimed_refs,
-                "has_evidence": request.images_count > 0,
+                "has_evidence": request.images_count > 0 or any(m.attachments > 0 for m in request.messages if m.role == 'player'),
                 "claims": [player_text] if player_text else [],
             },
             "draft_reply": {"lang": lang, "text": draft, "cited": cited},
