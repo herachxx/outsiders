@@ -6,6 +6,8 @@
 
 ## Реализованные модули
 
+- `scripts/sample_for_labeling.py` — приватная стратифицированная выборка и разделение по заявителям; `scripts/merge_labels.py` — проверка меток, согласие и конфликты. Использование описано в `docs/annotation-guide.md`.
+
 - `app/priority.py` — черновая политика приоритетов и обязательного участия человека; инструкция — `docs/annotation-guide.md`, схема внешней taxonomy — `configs/taxonomy.schema.json`.
 
 - `scripts/inspect_data.py` — потоковая инвентаризация обращений и агрегатная проверка правил/taxonomy; результаты описаны в `docs/data-contract.md`.
