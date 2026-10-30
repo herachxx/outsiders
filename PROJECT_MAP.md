@@ -38,6 +38,7 @@ outsiders/
 │   ├── inspect_data.py          диагностика данных, правил и taxonomy
 │   ├── sample_for_labeling.py   слепая выборка, manifest, пустые метки
 │   ├── train.py                 обучение из B1 gold, grouped CV только в train
+│   ├── benchmark.py             E2: локальный pipeline, p95, ошибки, параллельность
 │   ├── evaluate_drafts.py       D4: слепые пары A/B и агрегаты оценок
 │   ├── evaluate.py              оценка сервиса: категории, приоритеты, языки
 │   └── merge_labels.py          проверка меток, согласие и конфликты
@@ -52,6 +53,7 @@ outsiders/
 │   └── annotation-guide.md     категории, приоритеты, инструкция B1
 └── tests/
     ├── test_core.py            безопасность, правила, API и batch
+    ├── test_benchmark.py       процентили, ошибки и приватность отчёта
     ├── test_draft_evaluation.py слепой пакет, парность, валидация оценок
     ├── test_safety.py          опасный текст, подмена цитат и генератора
     ├── test_dedupe.py          временные границы, заявители, batch и HTTP
@@ -139,3 +141,5 @@ D2: `app/draft.py` и `app/templates/drafts.json` — шаблоны ru/kk/uz/en
 D3: `app/safety.py`, `tests/test_safety.py`, `docs/safety.md` — строгая схема, проверка цитат/релевантности, соответствие шаблону и нейтральный fallback с человеком. Свободная LLM-генерация не разрешена gate. Следующий этап D4 — подготовка слепой экспертной оценки черновиков.
 
 D4 технически готов: scripts/evaluate_drafts.py, tests/test_draft_evaluation.py, docs/eval-rubric.md. Приватный пакет 100 пар: ../private/draft-review-d4-v1; оценки пустые, candidate эвристический. Исключены holdout-группы B1. Следующий этап — E2, измерение времени и стоимости; экспертная оценка D4 требует людей.
+
+E2: scripts/benchmark.py, tests/test_benchmark.py, docs/performance.md. Выполнен локальный baseline-прогон 1000 valid, 1/5/20 потоков, p95 до 0,54 мс, ошибок 0, человек 100%; отчёт ../private/benchmark-e2-v1.json. HTTP/очередь и раздельное время стадий не измерены. Следующий этап E3 — воспроизводимая сборка и инструкция сдачи; UI E1 пока не реализован.
