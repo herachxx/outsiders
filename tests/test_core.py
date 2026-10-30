@@ -37,6 +37,17 @@ def test_admin_answer_never_changes_prediction():
     assert service.triage(request) == first
 
 
+def test_post_admin_player_messages_do_not_change_triage():
+    service = TriageService(RuleIndex.from_data(RULES))
+    request = ticket('Где магазин?', kind='report')
+    first = service.triage(request)
+    request['messages'].extend([
+        {'role': 'admin', 'text': 'Ответ'},
+        {'role': 'player', 'text': 'Аккаунт взломан', 'attachments': 3},
+    ])
+    assert service.triage(request) == first
+
+
 def test_payment_is_always_human_and_no_promise():
     result = TriageService(RuleIndex.from_data(RULES)).triage(
         ticket("Оплатил донат, деньги списались, не пришло", kind="report")

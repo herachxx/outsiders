@@ -1,7 +1,7 @@
 # Карта проекта
 
 Краткая точка входа для продолжения работы. Сверено с кодом 2026-10-30.
-Grand Mobile Support Copilot: категория, приоритет, проверяемая цитата и черновик ответа. Стек: Python + FastAPI + Pydantic; сейчас эвристики и шаблоны, без обученной модели.
+Grand Mobile Support Copilot: категория, приоритет, проверяемая цитата и черновик ответа. Стек: Python + FastAPI + Pydantic, опционально scikit-learn. Сейчас эвристики и шаблоны; обучение готово технически, реальные метки ещё нужны.
 
 ## Как быстро продолжить
 
@@ -25,6 +25,8 @@ outsiders/
 │   ├── api.py                   POST /triage; GET /health
 │   ├── batch.py                 JSONL/GZ → JSONL, одна строка на входную
 │   ├── core.py                  общий TriageService, эвристики, язык, черновик
+│   ├── preprocess.py            текст player до первого admin, нормализация
+│   ├── classifier.py            TF-IDF + линейная модель, загрузка и прогноз
 │   ├── priority.py              приоритет и передача человеку, политика draft
 │   ├── rules.py                 индекс правил и составной ключ цитаты
 │   └── submission.py            преобразование цитат в строковый формат сдачи
@@ -32,6 +34,7 @@ outsiders/
 │   ├── __init__.py
 │   ├── inspect_data.py          диагностика данных, правил и taxonomy
 │   ├── sample_for_labeling.py   слепая выборка, manifest, пустые метки
+│   ├── train.py                 обучение из B1 gold, grouped CV только в train
 │   └── merge_labels.py          проверка меток, согласие и конфликты
 ├── configs/
 │   └── taxonomy.schema.json     схема внешней taxonomy
@@ -39,9 +42,11 @@ outsiders/
 │   ├── implementation-plan.md  полный план A–E, критерии, исследования
 │   ├── data-contract.md        структура и агрегатная диагностика данных
 │   ├── api-contract.md         запросы, форматы ответа, ошибки
+│   ├── training.md             обучение B2, артефакты, метрики, подключение
 │   └── annotation-guide.md     категории, приоритеты, инструкция B1
 └── tests/
     ├── test_core.py            безопасность, правила, API и batch
+    ├── test_classifier.py      утечки, обучение, артефакты, API и CLI с моделью
     ├── test_contract.py        строгая валидация и формат сдачи
     ├── test_priority.py        маршрутизация чувствительных категорий
     ├── test_data_contract.py   агрегатная диагностика без сырых текстов
@@ -57,7 +62,8 @@ JSONL → batch ──┘
 
 Исходные данные → sample_for_labeling → tasks + manifest + labels.csv
 Ручная разметка + manifest → merge_labels → gold + conflicts
-gold → обучение B2 (ещё не реализовано)
+tasks + manifest + gold → train → classifier → приватные model.joblib + report.json
+core → preprocess → опциональный classifier → защитные правила → priority + rules
 ```
 
 `submission` применяется только для формата сдачи; internal сохраняет полные цитаты.
@@ -67,6 +73,7 @@ gold → обучение B2 (ещё не реализовано)
 | Вход, ответ, форматы | `schemas.py`, `submission.py`, `docs/api-contract.md` | `test_contract.py` |
 | HTTP или batch | `api.py`, `batch.py`, общий `core.py` | `test_core.py`, `test_contract.py` |
 | Категория, язык, черновик | `core.py` | `test_core.py` |
+| Обучение и признаки | `preprocess.py`, `classifier.py`, `scripts/train.py`, `docs/training.md` | `test_classifier.py`, `test_core.py` |
 | Приоритет и эскалация | `priority.py`, `docs/annotation-guide.md` | `test_priority.py` |
 | Цитаты | `rules.py`, таблицы соответствий в `core.py` | `test_core.py` |
 | Данные и разметка | скрипты в `scripts/`, data-contract и annotation-guide | `test_data_contract.py`, `test_sampling.py` |
@@ -77,8 +84,9 @@ gold → обучение B2 (ещё не реализовано)
 
 - Реализованы baseline, диагностика A1, контракт A2, черновая политика A3 и инструменты B1. Подтверждение политики и ручная разметка ещё нужны.
 - B1 разделяет выборку по заявителям, скрывает ответы администраторов, проверяет метки и выделяет конфликты. Подготовлен приватный пакет на 800 обращений; это не готовый gold.
-- Следующий этап **B2**: общий preprocessing до первого ответа администратора, TF-IDF + линейный классификатор отдельно для complaint/report, обучение только на train и опциональное подключение к сервису. Файлов `app/preprocess.py`, `app/classifier.py`, `scripts/train.py` пока нет.
-- Известный пробел: `core.py` исключает сообщения admin, но пока использует сообщения player после ответа администратора. В B2 требуется единый с разметкой cutoff и регрессионный тест.
+- **B2 технически готов**: общий preprocessing, раздельные модели complaint/report, grouped CV против regex/majority, приватные артефакты, API/batch. Проверен на синтетике; пустой реальный gold отклоняется без модели. Реальное обучение и оценка ждут разметки.
+- Утечка сообщений player после admin исправлена общим cutoff в сервисе, обучении и выборке B1. Чувствительную эвристическую категорию модель не может понизить.
+- Следующий этап **B3**: приоритет и калибровка; реальные метрики и калибровка требуют размеченных данных. Holdout остаётся нетронутым.
 - `confidence=0.0` до калибровки; история недоступна, дубли не определяются. Язык определяется эвристически; релевантность правил ограничена таблицами, ответы шаблонные.
 - Далее по плану: B3 калибровка/приоритет; C — языки, правила, дубли; D — генерация, проверки и экспертная оценка; E — интерфейс, измерения и сдача. Конкурсное качество пока не подтверждено.
 
@@ -99,7 +107,8 @@ gold → обучение B2 (ещё не реализовано)
 .\.venv\Scripts\python.exe -m app.batch --help
 .\.venv\Scripts\python.exe -m scripts.sample_for_labeling --help
 .\.venv\Scripts\python.exe -m scripts.merge_labels --help
+.\.venv\Scripts\python.exe -m scripts.train --help
 git diff --check
 ```
 
-Установка и пример batch — в `README.md`; команды разметки — в `docs/annotation-guide.md`. Счётчики тестов и историю коммитов здесь не дублируем: проверять командами.
+Установка и пример batch — в `README.md`; разметка — в `docs/annotation-guide.md`; B2 — в `docs/training.md`. Для полной проверки B2 нужен extra `ml`. Счётчики тестов и историю коммитов здесь не дублируем: проверять командами.

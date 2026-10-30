@@ -4,7 +4,8 @@ import re
 
 from .rules import RuleIndex
 from .schemas import TriageRequest
-from .priority import route
+from .priority import route, MANDATORY_HUMAN
+from .preprocess import before_admin, player_text as extract_player_text, normalize
 
 
 CATEGORY_PATTERNS = {
@@ -42,11 +43,6 @@ PREFERRED_SECTIONS = {
 }
 
 
-def normalize(text: str) -> str:
-    """Normalize a search copy without changing the original player text."""
-    return " ".join(text.casefold().replace("ё", "е").split())
-
-
 def language(text: str) -> str:
     low = text.casefold()
     if re.search(r"[әіңғүұқөһ]", low):
@@ -63,21 +59,32 @@ def language(text: str) -> str:
 
 
 class TriageService:
-    def __init__(self, rules: RuleIndex):
+    def __init__(self, rules: RuleIndex, classifier=None):
         self.rules = rules
+        self.classifier = classifier
 
     def triage(self, payload: dict | TriageRequest) -> dict:
         request = payload if isinstance(payload, TriageRequest) else TriageRequest.model_validate(payload)
-        player_text = " ".join(m.text for m in request.messages if m.role == "player").strip()
+        player_text = extract_player_text(request.messages)
         search_text = normalize(player_text)
         lang = language(player_text)
-        category = self._category(request.kind, search_text)
-        has_attachments = request.images_count > 0 or any(m.attachments > 0 for m in request.messages if m.role == 'player')
+        heuristic_category = self._category(request.kind, search_text)
+        predicted = self.classifier.predict(request.kind, search_text) if self.classifier else None
+        category = predicted or heuristic_category
+        # An uncalibrated model must not override existing sensitive routing.
+        safety_override = heuristic_category in MANDATORY_HUMAN and category != heuristic_category
+        if safety_override:
+            category = heuristic_category
+        has_attachments = request.images_count > 0 or any(m.attachments > 0 for m in before_admin(request.messages) if m.role == 'player')
         routing = route(category, search_text, has_attachments)
         priority = routing.priority
         rule_ref = (request.rule_refs_raw or "").strip()
         claimed_refs = re.findall(r"\b\d+(?:\.\d+){1,2}\b", rule_ref)
         reasons = ["history_unavailable", *routing.reasons]
+        if self.classifier:
+            reasons.append('classifier_uncalibrated' if predicted else 'classifier_fallback')
+        if safety_override:
+            reasons.append('sensitive_category_override')
         if lang in ("lat", "und"):
             reasons.append("language_uncertain")
         cited = []
@@ -116,7 +123,7 @@ class TriageService:
             },
             "draft_reply": {"lang": lang, "text": draft, "cited": cited},
             "needs_human": needs_human,
-            "confidence": 0.0,  # Heuristic baseline is not calibrated.
+            "confidence": 0.0,  # Neither heuristic nor B2 model is calibrated.
             "reasons": reasons,
         }
 

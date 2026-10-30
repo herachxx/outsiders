@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 
 from app.priority import POLICY_VERSION
+from app.preprocess import before_admin
 
 ROOT = Path(__file__).resolve().parents[1]
 LABEL_FIELDS = ['annotation_id', 'annotator_id', 'category', 'priority', 'language',
@@ -51,9 +52,7 @@ def build_sample(records, size=800, seed=42):
         if row.get('kind') not in ('report', 'complaint'):
             raise ValueError('Unknown kind')
         messages = []
-        for message in row['messages']:
-            if message['role'] == 'admin':
-                break
+        for message in before_admin(row['messages']):
             if message['role'] in ('player', 'reported_player'):
                 messages.append({'role': message['role'], 'text': message['text']})
         if not any(m['role'] == 'player' for m in messages):

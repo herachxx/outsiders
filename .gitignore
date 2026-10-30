@@ -10,3 +10,4 @@ models/
 reports/private/
 .env
 *.egg-info/
+*.joblib

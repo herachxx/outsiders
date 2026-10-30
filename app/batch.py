@@ -11,6 +11,7 @@ from .core import TriageService
 from .rules import RuleIndex
 from .schemas import TriageRequest, TriageResponse
 from .submission import to_submission
+from .classifier import CategoryClassifier
 
 
 def predict_lines(lines: Iterable[str], service: TriageService, format: str = 'submission') -> Iterator[dict]:
@@ -39,9 +40,11 @@ def main() -> None:
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--rules", required=True)
+    parser.add_argument('--model', help='Trusted local model.joblib from scripts.train (optional)')
     parser.add_argument('--format', choices=['submission', 'internal'], default='submission')
     args = parser.parse_args()
-    service = TriageService(RuleIndex.from_file(args.rules))
+    classifier = CategoryClassifier.load(args.model) if args.model else None
+    service = TriageService(RuleIndex.from_file(args.rules), classifier)
     opener = gzip.open if args.input.endswith(".gz") else open
     with opener(args.input, "rt", encoding="utf-8") as source, open(args.output, "w", encoding="utf-8") as target:
         for prediction in predict_lines(source, service, args.format):

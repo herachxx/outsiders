@@ -8,12 +8,15 @@ from .core import TriageService
 from .rules import RuleIndex
 from .schemas import TriageRequest, TriageResponse, SubmissionResponse
 from .submission import to_submission
+from .classifier import CategoryClassifier
 
 
 def create_app(service: TriageService | None = None) -> FastAPI:
     if service is None:
         rules_path = os.environ.get("GRAND_RULES_PATH")
-        service = TriageService(RuleIndex.from_file(rules_path) if rules_path else RuleIndex([]))
+        model_path = os.environ.get('GRAND_MODEL_PATH')
+        classifier = CategoryClassifier.load(model_path) if model_path else None
+        service = TriageService(RuleIndex.from_file(rules_path) if rules_path else RuleIndex([]), classifier)
     app = FastAPI(title="Grand Mobile Support Copilot", version="0.1.0")
 
     @app.post("/triage", response_model=SubmissionResponse | TriageResponse)
