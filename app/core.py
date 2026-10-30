@@ -4,6 +4,7 @@ import re
 
 from .rules import RuleIndex
 from .schemas import TriageRequest
+from .priority import route
 
 
 CATEGORY_PATTERNS = {
@@ -71,10 +72,12 @@ class TriageService:
         search_text = normalize(player_text)
         lang = language(player_text)
         category = self._category(request.kind, search_text)
-        priority = self._priority(category, search_text)
+        has_attachments = request.images_count > 0 or any(m.attachments > 0 for m in request.messages if m.role == 'player')
+        routing = route(category, search_text, has_attachments)
+        priority = routing.priority
         rule_ref = (request.rule_refs_raw or "").strip()
         claimed_refs = re.findall(r"\b\d+(?:\.\d+){1,2}\b", rule_ref)
-        reasons = ["history_unavailable"]
+        reasons = ["history_unavailable", *routing.reasons]
         if lang in ("lat", "und"):
             reasons.append("language_uncertain")
         cited = []
@@ -93,15 +96,9 @@ class TriageService:
             cited.append(rule.citation())
         if rule_ref and not claimed_refs:
             reasons.append("rule_unparsed")
-        if category in {"report.account", "report.payment", "complaint.admin"}:
-            reasons.append("mandatory_human")
         if request.kind == "complaint":
             reasons.append("evidence_not_verified")
-        needs_human = request.kind == "complaint" or category in {
-            "report.account", "report.payment", "report.complaint", "report.help"
-        } or lang in ("lat", "und")
-        if category.endswith("offtopic") or category.endswith("invalid"):
-            needs_human = True
+        needs_human = routing.needs_human or lang in ("lat", "und")
         draft = self._draft(lang, category, needs_human)
         if cited and lang == "ru":
             refs = ", ".join(f"{item['section_id']}/{item['ref']}" for item in cited)
@@ -114,7 +111,7 @@ class TriageService:
             "extracted": {
                 "nickname": request.reported_nick if request.kind == "complaint" else None,
                 "rule_refs": claimed_refs,
-                "has_evidence": request.images_count > 0 or any(m.attachments > 0 for m in request.messages if m.role == 'player'),
+                "has_evidence": has_attachments,
                 "claims": [player_text] if player_text else [],
             },
             "draft_reply": {"lang": lang, "text": draft, "cited": cited},
@@ -129,16 +126,6 @@ class TriageService:
             if re.search(pattern, text):
                 return category
         return "complaint.other" if kind == "complaint" else "report.offtopic"
-
-    @staticmethod
-    def _priority(category: str, text: str) -> str:
-        if category in {"report.account", "report.payment"} or re.search(r"угроз.{0,15}жизн|массов.{0,10}баг", text):
-            return "p0"
-        if category in {"complaint.cheat", "complaint.scam", "complaint.rmt_ads"}:
-            return "p1"
-        if category in {"complaint.invalid", "report.question", "report.offtopic"}:
-            return "p3"
-        return "p2"
 
     @staticmethod
     def _draft(lang: str, category: str, needs_human: bool) -> str:

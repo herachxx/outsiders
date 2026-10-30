@@ -6,6 +6,8 @@
 
 ## Реализованные модули
 
+- `app/priority.py` — черновая политика приоритетов и обязательного участия человека; инструкция — `docs/annotation-guide.md`, схема внешней taxonomy — `configs/taxonomy.schema.json`.
+
 - `scripts/inspect_data.py` — потоковая инвентаризация обращений и агрегатная проверка правил/taxonomy; результаты описаны в `docs/data-contract.md`.
 
 - `app/schemas.py` — Pydantic-схема входа.
