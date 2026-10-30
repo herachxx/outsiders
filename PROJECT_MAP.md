@@ -25,6 +25,8 @@ outsiders/
 │   ├── api.py                   POST /triage; GET /health
 │   ├── batch.py                 JSONL/GZ → JSONL, одна строка на входную
 │   ├── core.py                  общий TriageService, эвристики, язык, черновик
+│   ├── history.py               SQLite: приватные ключи, окно 60 минут, идемпотентность
+│   ├── dedupe.py                признаки точного повтора и пяти обращений
 │   ├── preprocess.py            текст player до первого admin, нормализация
 │   ├── classifier.py            TF-IDF + линейная модель, загрузка и прогноз
 │   ├── priority.py              приоритет и передача человеку, политика draft
@@ -44,9 +46,11 @@ outsiders/
 │   ├── data-contract.md        структура и агрегатная диагностика данных
 │   ├── api-contract.md         запросы, форматы ответа, ошибки
 │   ├── training.md             обучение B2, артефакты, метрики, подключение
+│   ├── history.md              C3: запуск истории, окно времени, ограничения
 │   └── annotation-guide.md     категории, приоритеты, инструкция B1
 └── tests/
     ├── test_core.py            безопасность, правила, API и batch
+    ├── test_dedupe.py          временные границы, заявители, batch и HTTP
     ├── test_classifier.py      утечки, обучение, артефакты, API и CLI с моделью
     ├── test_contract.py        строгая валидация и формат сдачи
     ├── test_priority.py        маршрутизация чувствительных категорий
@@ -121,3 +125,5 @@ git diff --check
 C1: `app/language.py` — консервативный детектор с LanguageDecision и optional fastText через GRAND_LANGUAGE_MODEL_PATH; `tests/test_language.py`, инструкция `docs/language.md`. Эвристический режим всегда language_uncertain и человек. Реальная модель и качество kk/uz не проверены. Следующий этап C2 — поиск и релевантность правил.
 
 C2 выполнен: `app/facts.py` — claim/reported_player_statement/metadata с исходным полем и offsets, без verified; `tests/test_facts.py`, `docs/facts.md`. В core extracted.claims содержит отдельные утверждения player. Название C2 ранее ошибочно связывалось с retrieval; источник порядка этапов — implementation-plan.md.
+
+C3 частично реализован: точные нормализованные повторы одного заявителя, SQLite для HTTP, хронологический batch, 5 обращений за 60 минут. Включение opt-in, подробности docs/history.md. Семантические пары и precision/recall ожидают разметки. Следующий этап основного пути — D1, индекс и релевантность правил.

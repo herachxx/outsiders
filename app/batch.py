@@ -14,7 +14,7 @@ from .submission import to_submission
 from .classifier import CategoryClassifier
 
 
-def predict_lines(lines: Iterable[str], service: TriageService, format: str = 'submission') -> Iterator[dict]:
+def _predict_lines(lines: Iterable[str], service: TriageService, format: str = 'submission') -> Iterator[dict]:
     if format not in ('submission', 'internal'):
         raise ValueError('Unknown output format')
     for line in lines:
@@ -35,6 +35,41 @@ def predict_lines(lines: Iterable[str], service: TriageService, format: str = 's
             yield {'error': 'invalid_output'}
 
 
+def predict_lines(lines, service, format='submission', history=False):
+    if not history:
+        yield from _predict_lines(lines, service, format)
+        return
+    from datetime import datetime
+    from .history import History
+    from .dedupe import annotate_history
+    source = list(lines)
+    outputs = list(_predict_lines(source, service, format))
+    ordered = []
+    for index, line in enumerate(source):
+        if 'error' in outputs[index]:
+            continue
+        try:
+            raw = json.loads(line)
+            ts = datetime.fromisoformat(raw['created_at'].replace('Z', '+00:00'))
+            if ts.tzinfo is None or not isinstance(raw['ticket_id'], str) or not raw['ticket_id']:
+                raise ValueError('Missing timezone or identity')
+            allowed = {k: v for k, v in raw.items() if k in TriageRequest.model_fields}
+            request = TriageRequest.model_validate(allowed)
+            ordered.append((ts.timestamp(), index, raw['ticket_id'], request))
+        except (ValueError, KeyError, TypeError):
+            outputs[index]['reasons'].append('history_metadata_missing_or_invalid')
+    store = History()
+    try:
+        for timestamp, index, ticket_id, request in sorted(ordered, key=lambda item: (item[0], item[1])):
+            try:
+                annotate_history(outputs[index], request, store, ticket_id, timestamp)
+            except ValueError:
+                outputs[index] = {'error': 'history_identity_conflict'}
+        yield from outputs
+    finally:
+        store.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Predict one JSON object for every JSONL row")
     parser.add_argument("--input", required=True)
@@ -42,12 +77,13 @@ def main() -> None:
     parser.add_argument("--rules", required=True)
     parser.add_argument('--model', help='Trusted local model.joblib from scripts.train (optional)')
     parser.add_argument('--format', choices=['submission', 'internal'], default='submission')
+    parser.add_argument('--history', action='store_true', help='Chronological exact duplicate detection; buffers input')
     args = parser.parse_args()
     classifier = CategoryClassifier.load(args.model) if args.model else None
     service = TriageService(RuleIndex.from_file(args.rules), classifier)
     opener = gzip.open if args.input.endswith(".gz") else open
     with opener(args.input, "rt", encoding="utf-8") as source, open(args.output, "w", encoding="utf-8") as target:
-        for prediction in predict_lines(source, service, args.format):
+        for prediction in predict_lines(source, service, args.format, args.history):
             target.write(json.dumps(prediction, ensure_ascii=False) + "\n")
 
 

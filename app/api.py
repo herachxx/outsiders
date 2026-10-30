@@ -1,8 +1,9 @@
 import os
+from contextlib import asynccontextmanager
 from typing import Literal
 from pydantic import ValidationError
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 
 from .core import TriageService
 from .rules import RuleIndex
@@ -17,14 +18,38 @@ def create_app(service: TriageService | None = None) -> FastAPI:
         model_path = os.environ.get('GRAND_MODEL_PATH')
         classifier = CategoryClassifier.load(model_path) if model_path else None
         service = TriageService(RuleIndex.from_file(rules_path) if rules_path else RuleIndex([]), classifier)
-    app = FastAPI(title="Grand Mobile Support Copilot", version="0.1.0")
+    history_path = os.environ.get('GRAND_HISTORY_PATH')
+    history = None
+    if history_path:
+        from scripts.sample_for_labeling import private_path
+        from .history import History
+        history = History(str(private_path(history_path)))
+
+    @asynccontextmanager
+    async def lifespan(app):
+        try:
+            yield
+        finally:
+            if history:
+                history.close()
+
+    app = FastAPI(title='Grand Mobile Support Copilot', version='0.1.0', lifespan=lifespan)
 
     @app.post("/triage", response_model=SubmissionResponse | TriageResponse)
-    def triage(request: TriageRequest, format: Literal['submission', 'internal'] = 'submission') -> dict:
+    def triage(request: TriageRequest, format: Literal['submission', 'internal'] = 'submission',
+               x_ticket_id: str | None = Header(default=None)) -> dict:
         if not service.rules.rules:
             raise HTTPException(status_code=503, detail="Rules are not loaded")
         try:
-            result = TriageResponse.model_validate(service.triage(request))
+            output = service.triage(request)
+            if history and x_ticket_id:
+                import time
+                from .dedupe import annotate_history
+                try:
+                    annotate_history(output, request, history, x_ticket_id, time.time())
+                except ValueError:
+                    raise HTTPException(status_code=409, detail='Ticket identity conflict') from None
+            result = TriageResponse.model_validate(output)
         except ValidationError:
             raise HTTPException(status_code=503, detail='Invalid service output') from None
         return to_submission(result) if format == 'submission' else result.model_dump()

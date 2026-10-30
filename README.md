@@ -59,6 +59,8 @@ $env:GRAND_RULES_PATH = 'C:\path\outside\repo\rules.json'
 
 ## Проверка
 
+История C3 включается batch-флагом `--history` или HTTP-настройкой `GRAND_HISTORY_PATH` вместе с заголовком `X-Ticket-ID`. Поддержаны точные повторы и 5 обращений за 60 минут; семантическая близость ещё не реализована. Контракт, приватность и ограничения — в [инструкции истории](docs/history.md).
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
