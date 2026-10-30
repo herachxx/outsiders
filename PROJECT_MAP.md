@@ -38,6 +38,7 @@ outsiders/
 │   ├── inspect_data.py          диагностика данных, правил и taxonomy
 │   ├── sample_for_labeling.py   слепая выборка, manifest, пустые метки
 │   ├── train.py                 обучение из B1 gold, grouped CV только в train
+│   ├── evaluate_drafts.py       D4: слепые пары A/B и агрегаты оценок
 │   ├── evaluate.py              оценка сервиса: категории, приоритеты, языки
 │   └── merge_labels.py          проверка меток, согласие и конфликты
 ├── configs/
@@ -51,6 +52,7 @@ outsiders/
 │   └── annotation-guide.md     категории, приоритеты, инструкция B1
 └── tests/
     ├── test_core.py            безопасность, правила, API и batch
+    ├── test_draft_evaluation.py слепой пакет, парность, валидация оценок
     ├── test_safety.py          опасный текст, подмена цитат и генератора
     ├── test_dedupe.py          временные границы, заявители, batch и HTTP
     ├── test_classifier.py      утечки, обучение, артефакты, API и CLI с моделью
@@ -135,3 +137,5 @@ D1: `app/rules.py` содержит лексический search, отказ п
 D2: `app/draft.py` и `app/templates/drafts.json` — шаблоны ru/kk/uz/en по типу обращения, дополнительные запросы при отсутствии метаданных, явный язык fallback. `tests/test_draft.py`, `docs/drafts.md`. Носители и администраторы ещё не оценивали тексты. Следующий этап D3 — проверка безопасности ответа.
 
 D3: `app/safety.py`, `tests/test_safety.py`, `docs/safety.md` — строгая схема, проверка цитат/релевантности, соответствие шаблону и нейтральный fallback с человеком. Свободная LLM-генерация не разрешена gate. Следующий этап D4 — подготовка слепой экспертной оценки черновиков.
+
+D4 технически готов: scripts/evaluate_drafts.py, tests/test_draft_evaluation.py, docs/eval-rubric.md. Приватный пакет 100 пар: ../private/draft-review-d4-v1; оценки пустые, candidate эвристический. Исключены holdout-группы B1. Следующий этап — E2, измерение времени и стоимости; экспертная оценка D4 требует людей.
