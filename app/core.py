@@ -1,0 +1,135 @@
+"""Deterministic safe baseline, shared by HTTP and batch interfaces."""
+
+import re
+
+from .rules import RuleIndex
+from .schemas import TriageRequest
+
+
+CATEGORY_PATTERNS = {
+    "complaint": [
+        ("complaint.admin", r"админ|администратор|admin"),
+        ("complaint.cheat", r"чит|cheat|aimbot|аимбот|летает|сквозь стен"),
+        ("complaint.scam", r"обман|мошен|вымог|скам"),
+        ("complaint.rmt_ads", r"реальн.{0,8}деньг|прода.{0,10}аккаунт|реклам"),
+        ("complaint.insult", r"оскорб|матер|унизи|расизм|токсич"),
+        ("complaint.dm", r"\bdm\b|\bдм\b|убил|убийств|урон|зел[её]н.{0,5}зон"),
+    ],
+    "report": [
+        ("report.account", r"взлом|аккаунт|парол|не могу войти|пропал.{0,15}имуществ"),
+        ("report.payment", r"плат[её]ж|оплат|донат|деньги спис|не пришло.{0,10}(гк|донат)"),
+        ("report.complaint", r"оскорб|читер|\bдм\b|убил|жалоб"),
+        ("report.help", r"застрял|застряла|баг|телепорт|помогите выбраться"),
+        ("report.question", r"как |где |что такое|можно ли|подскажите"),
+    ],
+}
+
+RELEVANT_REFS = {
+    "complaint.cheat": {"5.2"},
+    "complaint.insult": {"2.1", "2.4", "2.6"},
+    "complaint.dm": {"5.3", "5.4"},
+    "complaint.scam": {"4.1", "4.2"},
+    "complaint.rmt_ads": {"2.3", "4.4"},
+}
+
+
+def normalize(text: str) -> str:
+    """Normalize a search copy without changing the original player text."""
+    return " ".join(text.casefold().replace("ё", "е").split())
+
+
+def language(text: str) -> str:
+    low = text.casefold()
+    if re.search(r"[әіңғүұқөһ]", low):
+        return "kk"
+    if re.search(r"[ўқғҳ]", low):
+        return "uz"
+    cyrillic = len(re.findall(r"[а-яё]", low))
+    latin = len(re.findall(r"[a-z]", low))
+    if cyrillic >= 4 and cyrillic >= latin * 2:
+        return "ru"
+    if latin >= 4 and latin >= cyrillic * 2:
+        return "lat"
+    return "und"
+
+
+class TriageService:
+    def __init__(self, rules: RuleIndex):
+        self.rules = rules
+
+    def triage(self, payload: dict | TriageRequest) -> dict:
+        request = payload if isinstance(payload, TriageRequest) else TriageRequest.model_validate(payload)
+        player_text = " ".join(m.text for m in request.messages if m.role == "player").strip()
+        search_text = normalize(player_text)
+        lang = language(player_text)
+        category = self._category(request.kind, search_text)
+        priority = self._priority(category, search_text)
+        rule_ref = (request.rule_refs_raw or "").strip()
+        claimed_refs = re.findall(r"\b\d+(?:\.\d+){1,2}\b", rule_ref)
+        reasons = ["history_unavailable"]
+        if lang in ("lat", "und"):
+            reasons.append("language_uncertain")
+        if rule_ref and any(self.rules.resolve(ref) is None for ref in claimed_refs):
+            reasons.append("rule_ambiguous_or_unknown")
+        if category in {"report.account", "report.payment", "complaint.admin"}:
+            reasons.append("mandatory_human")
+        if request.kind == "complaint":
+            reasons.append("evidence_not_verified")
+        needs_human = request.kind == "complaint" or category in {
+            "report.account", "report.payment", "report.complaint", "report.help"
+        } or lang in ("lat", "und")
+        if category.endswith("offtopic") or category.endswith("invalid"):
+            needs_human = True
+        draft = self._draft(lang, category, needs_human)
+        cited = []
+        for ref in claimed_refs:
+            rule = self.rules.resolve(ref)
+            if rule and ref in RELEVANT_REFS.get(category, set()):
+                cited.append(rule.citation())
+        return {
+            "lang": lang,
+            "category": category,
+            "priority": priority,
+            "is_spam_or_duplicate": False,
+            "extracted": {
+                "nickname": request.reported_nick if request.kind == "complaint" else None,
+                "rule_refs": claimed_refs,
+                "has_evidence": request.images_count > 0,
+                "claims": [player_text] if player_text else [],
+            },
+            "draft_reply": {"lang": lang, "text": draft, "cited": cited},
+            "needs_human": needs_human,
+            "confidence": 0.0,  # Heuristic baseline is not calibrated.
+            "reasons": reasons,
+        }
+
+    @staticmethod
+    def _category(kind: str, text: str) -> str:
+        for category, pattern in CATEGORY_PATTERNS[kind]:
+            if re.search(pattern, text):
+                return category
+        return "complaint.other" if kind == "complaint" else "report.offtopic"
+
+    @staticmethod
+    def _priority(category: str, text: str) -> str:
+        if category in {"report.account", "report.payment"} or re.search(r"угроз.{0,15}жизн|массов.{0,10}баг", text):
+            return "p0"
+        if category in {"complaint.cheat", "complaint.scam", "complaint.rmt_ads"}:
+            return "p1"
+        if category in {"complaint.invalid", "report.question", "report.offtopic"}:
+            return "p3"
+        return "p2"
+
+    @staticmethod
+    def _draft(lang: str, category: str, needs_human: bool) -> str:
+        if lang == "kk":
+            return "Өтінішіңіз қабылданды. Оны әкімші тексереді."
+        if lang == "uz":
+            return "Murojaatingiz qabul qilindi. Uni administrator tekshiradi."
+        if lang in ("lat", "und"):
+            return "Your request has been received. A support agent will review it."
+        if category == "report.offtopic":
+            return "Пожалуйста, уточните, что произошло и на каком сервере."
+        if needs_human:
+            return "Спасибо за обращение. Передаём его администратору для проверки."
+        return "Спасибо за вопрос. Администратор проверит информацию и ответит вам."
