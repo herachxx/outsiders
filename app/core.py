@@ -9,6 +9,7 @@ from .preprocess import before_admin, player_text as extract_player_text, normal
 from .language import detect, language
 from .facts import extract_facts
 from .draft import build_draft
+from .safety import check_draft
 
 
 CATEGORY_PATTERNS = {
@@ -87,6 +88,10 @@ class TriageService:
             reasons.append("evidence_not_verified")
         needs_human = routing.needs_human or language_decision.uncertain
         draft = build_draft(request, category, lang, has_attachments, cited)
+        draft, safety_reasons = check_draft(draft, self.rules, request, category, lang, has_attachments)
+        reasons.extend(safety_reasons)
+        if safety_reasons:
+            needs_human = True
         return {
             "lang": lang,
             "category": category,

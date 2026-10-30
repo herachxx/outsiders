@@ -25,6 +25,7 @@ outsiders/
 │   ├── api.py                   POST /triage; GET /health
 │   ├── batch.py                 JSONL/GZ → JSONL, одна строка на входную
 │   ├── core.py                  общий TriageService, эвристики, язык, черновик
+│   ├── safety.py                финальная проверка шаблона, цитат и fallback
 │   ├── history.py               SQLite: приватные ключи, окно 60 минут, идемпотентность
 │   ├── dedupe.py                признаки точного повтора и пяти обращений
 │   ├── preprocess.py            текст player до первого admin, нормализация
@@ -50,6 +51,7 @@ outsiders/
 │   └── annotation-guide.md     категории, приоритеты, инструкция B1
 └── tests/
     ├── test_core.py            безопасность, правила, API и batch
+    ├── test_safety.py          опасный текст, подмена цитат и генератора
     ├── test_dedupe.py          временные границы, заявители, batch и HTTP
     ├── test_classifier.py      утечки, обучение, артефакты, API и CLI с моделью
     ├── test_contract.py        строгая валидация и формат сдачи
@@ -131,3 +133,5 @@ C3 частично реализован: точные нормализован�
 D1: `app/rules.py` содержит лексический search, отказ при неоднозначных разделах и validate_citation; `tests/test_rules.py`, `docs/retrieval.md`. Из core удалены фиксированные ref/category и section_id=30. Relevance@k на реальных gold-парах ещё не измерена. Следующий этап D2 — содержательные черновики по типу обращения.
 
 D2: `app/draft.py` и `app/templates/drafts.json` — шаблоны ru/kk/uz/en по типу обращения, дополнительные запросы при отсутствии метаданных, явный язык fallback. `tests/test_draft.py`, `docs/drafts.md`. Носители и администраторы ещё не оценивали тексты. Следующий этап D3 — проверка безопасности ответа.
+
+D3: `app/safety.py`, `tests/test_safety.py`, `docs/safety.md` — строгая схема, проверка цитат/релевантности, соответствие шаблону и нейтральный fallback с человеком. Свободная LLM-генерация не разрешена gate. Следующий этап D4 — подготовка слепой экспертной оценки черновиков.
