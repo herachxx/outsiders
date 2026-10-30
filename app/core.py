@@ -6,6 +6,7 @@ from .rules import RuleIndex
 from .schemas import TriageRequest
 from .priority import route, MANDATORY_HUMAN
 from .preprocess import before_admin, player_text as extract_player_text, normalize
+from .language import detect, language
 
 
 CATEGORY_PATTERNS = {
@@ -43,21 +44,6 @@ PREFERRED_SECTIONS = {
 }
 
 
-def language(text: str) -> str:
-    low = text.casefold()
-    if re.search(r"[әіңғүұқөһ]", low):
-        return "kk"
-    if re.search(r"[ўқғҳ]", low):
-        return "uz"
-    cyrillic = len(re.findall(r"[а-яё]", low))
-    latin = len(re.findall(r"[a-z]", low))
-    if cyrillic >= 4 and cyrillic >= latin * 2:
-        return "ru"
-    if latin >= 4 and latin >= cyrillic * 2:
-        return "lat"
-    return "und"
-
-
 class TriageService:
     def __init__(self, rules: RuleIndex, classifier=None):
         self.rules = rules
@@ -67,7 +53,8 @@ class TriageService:
         request = payload if isinstance(payload, TriageRequest) else TriageRequest.model_validate(payload)
         player_text = extract_player_text(request.messages)
         search_text = normalize(player_text)
-        lang = language(player_text)
+        language_decision = detect(player_text)
+        lang = language_decision.lang
         heuristic_category = self._category(request.kind, search_text)
         predicted = self.classifier.predict(request.kind, search_text) if self.classifier else None
         category = predicted or heuristic_category
@@ -88,8 +75,10 @@ class TriageService:
             reasons.append(('classifier_calibrated' if confidence else 'classifier_uncalibrated') if predicted else 'classifier_fallback')
         if safety_override:
             reasons.append('sensitive_category_override')
-        if lang in ("lat", "und"):
+        if language_decision.uncertain:
             reasons.append("language_uncertain")
+        if language_decision.mixed:
+            reasons.append('language_mixed')
         cited = []
         for ref in claimed_refs:
             candidates = [rule for rule in self.rules.rules if rule.ref == ref]
@@ -108,7 +97,7 @@ class TriageService:
             reasons.append("rule_unparsed")
         if request.kind == "complaint":
             reasons.append("evidence_not_verified")
-        needs_human = routing.needs_human or lang in ("lat", "und")
+        needs_human = routing.needs_human or language_decision.uncertain
         draft = self._draft(lang, category, needs_human)
         if cited and lang == "ru":
             refs = ", ".join(f"{item['section_id']}/{item['ref']}" for item in cited)
@@ -143,7 +132,11 @@ class TriageService:
             return "Өтінішіңіз қабылданды. Оны әкімші тексереді."
         if lang == "uz":
             return "Murojaatingiz qabul qilindi. Uni administrator tekshiradi."
-        if lang in ("lat", "und"):
+        if lang == 'es':
+            return 'Hemos recibido tu solicitud. Un administrador la revisará.'
+        if lang == 'pt':
+            return 'Recebemos sua solicitação. Um administrador irá analisá-la.'
+        if lang in ("lat", "und", "en"):
             return "Your request has been received. A support agent will review it."
         if category == "report.offtopic":
             return "Пожалуйста, уточните, что произошло и на каком сервере."

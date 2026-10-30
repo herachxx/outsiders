@@ -117,3 +117,5 @@ git diff --check
 Обновление B3: `app/calibration.py` и `tests/test_calibration.py` — отдельные группы fit/calibration/check внутри train, sigmoid, reliability bins и ECE. `scripts.train --calibrate` создаёт модель с вероятностями категории. При защитной замене категории confidence=0. Реальная калибровка ждёт gold. Следующий технический шаг — независимая оценка калиброванного режима по языкам; текущий evaluate оценивает некалиброванный режим.
 
 Оценка B3: `scripts.evaluate --calibrate` поддерживает вложенное разделение групп, сравнение с некалиброванным сервисом и эвристикой, reliability/ECE по языкам с учётом покрытия. Проверки — `tests/test_evaluate.py`. Следующая независимая техническая задача C1 — полноценное определение языка; реальные метрики B2/B3 ожидают разметки.
+
+C1: `app/language.py` — консервативный детектор с LanguageDecision и optional fastText через GRAND_LANGUAGE_MODEL_PATH; `tests/test_language.py`, инструкция `docs/language.md`. Эвристический режим всегда language_uncertain и человек. Реальная модель и качество kk/uz не проверены. Следующий этап C2 — поиск и релевантность правил.
