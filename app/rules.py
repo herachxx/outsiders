@@ -15,7 +15,10 @@ TOPICS = {
 
 FILING_POINTS = {  # complaint-filing rules (section "Правила жалоб"), matched by wording
     'complaint.invalid': {'1.2.3': r'описани', '1.3.4': r'общие формулировк'},
-    'complaint.admin': {'1.3.1': r'скриншот наказани'},
+    'complaint.admin': {'1.3.1': r'скриншот наказани', '3.4': r'жалобы на администраторов'},
+    'report.account': {'1.4': r'не восстанавливает'},
+    'report.help': {'3.1': r'репорт не по назначению'},
+    'report.offtopic': {'3.1': r'репорт не по назначению'},
     'complaint.dm': {  # taxonomy rules for DM: green zone (1.1), leaving an RP situation (5.3), houses (5.4)
         '1.1': r'убийства.{0,60}зел[её]н',
         '5.3': r'rp-ситуаци.{0,60}логическ',

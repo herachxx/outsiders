@@ -323,3 +323,24 @@ def test_dm_cites_the_taxonomy_point_that_fits_the_situation():
     assert cited("уход от рп на погоне убил") == [(30, "5.3")]
     assert cited("убил в зз возле больницы") == [(32, "1.1")]
     assert cited("просто убил меня на трассе") == []
+
+
+def test_taxonomy_points_for_admin_account_and_report_misuse_are_cited_when_they_fit():
+    rules = {"rules": [
+        {"id": 30, "category": "Общие правила", "points": [
+            {"ref": "1.4", "text": "Администрация не восстанавливает потерянное, украденное или переданное имущество."},
+            {"ref": "3.1", "text": "Запрещено использовать репорт не по назначению: просить телепорт и т.п."},
+            {"ref": "3.4", "text": "Жалобы на администраторов подаются в течение 2-х дней с момента выдачи наказания."}]},
+        {"id": 31, "category": "Правила жалоб", "points": [
+            {"ref": "1.3.1", "text": "Жалоба должна содержать: - скриншот наказания (если оно было выдано); - описание."}]}]}
+    service = TriageService(RuleIndex.from_data(rules))
+    def refs(text, kind):
+        result = service.triage(ticket(text, kind=kind, images_count=1 if kind == "complaint" else 0))
+        assert not any(r.startswith("safety_") for r in result["reasons"]), text
+        return [(c["section_id"], c["ref"]) for c in result["draft_reply"]["cited"]]
+    assert refs("не согласен с наказанием, прошу снять бан", "complaint") == [(31, "1.3.1"), (30, "3.4")]
+    assert refs("Взломали мой аккаунт, сменили пароль", "report") == [(30, "1.4")]
+    assert refs("Телепортируйте меня на 4 4", "report") == [(30, "3.1")]
+    assert refs("застрял в текстурах", "report") == []
+    ru = service.triage(ticket("не согласен с наказанием", images_count=1))["draft_reply"]["text"]
+    assert "Возможное нарушение" not in ru            # an appeal names no violation

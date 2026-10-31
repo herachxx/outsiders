@@ -41,6 +41,19 @@ def is_contentless(text: str) -> bool:
 CITE_MIN_CONFIDENCE = 0.7  # a wrong category would make the cited point irrelevant
 
 
+def category_rule_refs(category: str, text: str) -> list[str]:
+    """Taxonomy points that fit the category (and the situation), most specific first."""
+    if category == 'complaint.admin':
+        return ['1.3.1', '3.4']
+    if category == 'report.account':
+        return ['1.4']
+    if category in ('report.help', 'report.offtopic'):
+        # The report-misuse rule applies when the player asks for what reports must not be used for.
+        return ['3.1'] if re.search(r'телепорт|\bтп\b|тепни|деньг|валют|\bуров|имуществ|выдайте|подарите|дайте', text) else []
+    single = category_rule_ref(category, text)
+    return [single] if single else []
+
+
 def category_rule_ref(category: str, text: str) -> str | None:
     """General taxonomy point for a complaint category; none where no single point fits (dm, admin, other)."""
     if category == 'complaint.insult':
@@ -149,13 +162,14 @@ class TriageService:
             if rule is not None and self.rules.validate_citation(rule.citation()):
                 cited.append(rule.citation())
                 reasons.append("citation_from_category")
-        if not cited and not safety_override and confidence >= CITE_MIN_CONFIDENCE:
-            # Player named no usable point: use the taxonomy point for the category, still unique and relevant.
-            default_ref = category_rule_ref(category, search_text)
-            rule = self.rules.relevant_rule(search_text, category, default_ref) if default_ref else None
-            if rule is not None and self.rules.validate_citation(rule.citation()):
-                cited.append(rule.citation())
-                reasons.append("citation_from_category")
+        if not cited and not safety_override and (confidence >= CITE_MIN_CONFIDENCE or category == 'report.account'):
+            # Player named no usable point: use the taxonomy points for the category, each unique and relevant.
+            for default_ref in category_rule_refs(category, search_text):
+                rule = self.rules.relevant_rule(search_text, category, default_ref)
+                if rule is not None and self.rules.validate_citation(rule.citation()):
+                    cited.append(rule.citation())
+                    if "citation_from_category" not in reasons:
+                        reasons.append("citation_from_category")
         if rule_ref and not claimed_refs:
             reasons.append("rule_unparsed")
         if request.kind == "complaint":

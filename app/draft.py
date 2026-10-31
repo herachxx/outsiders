@@ -60,7 +60,7 @@ def build_draft(request, category, lang, has_evidence, cited):
     region = (request.region or '').strip().casefold()
     if (not region or region in {'cis', 'uz', 'kz'}) and not extract_server(normalize(_text(request))):
         parts.append(phrases['server_missing'])
-    if cited and is_complaint:
+    if cited and key in ('insult', 'cheat', 'dm', 'scam', 'rmt_ads'):
         first = cited[0]
         quote = rule_quote(first['excerpt'])
         # The rule text is Russian; a Kazakh or Uzbek draft names the point without mixing in a Russian quote.
