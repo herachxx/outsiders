@@ -1,1 +1,0 @@
-"""Grand Mobile Support Copilot."""
