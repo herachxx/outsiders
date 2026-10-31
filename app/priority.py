@@ -11,8 +11,11 @@ def multilingual_sensitive_category(text: str) -> str | None:
     text = ' '.join(text.casefold().split())
     for mark in ('‘', '’', 'ʻ', 'ʼ', '`'):
         text = text.replace(mark, "'")
-    account = r"(?:аккаунт|тіркелгі).{0,30}(?:бұзыл|кіре алмай)|(?:akkaunt|hisob).{0,30}(?:kira olmay|buzib kir)"
-    payment = r"төлем.{0,25}жасады|ақша.{0,20}(?:түспеді|шешілді)|pul.{0,20}yechild|to'lov.{0,20}qild|donat.{0,20}kelmadi"
+    # Keep explicit negative hack claims out of this signal. Do not suppress a
+    # separate access failure elsewhere in the message or downgrade its category.
+    hack = r"бұзылды\b|бұзылған\b(?!\s+жоқ)|buzib kir(?:ildi|ilgan)\b(?!\s+emas)"
+    account = rf"(?:аккаунт|тіркелгі|akkaunt|hisob)[^.!?;]{{0,30}}(?:кіре алмай|kira olmay|{hack})"
+    payment = r"төлем.{0,25}жасады|ақша.{0,20}(?:түспеді|шешілді)|pul.{0,20}yechild|to'lov.{0,20}qild|(?:donat|донат).{0,20}kelmadi"
     if re.search(account, text):
         return 'report.account'
     if re.search(payment, text):
