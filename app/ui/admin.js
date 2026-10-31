@@ -26,7 +26,7 @@ function icon(name) {
 const CATEGORY = {
   'complaint.insult': 'Оскорбления и токсичность', 'complaint.cheat': 'Читы и сторонние программы', 'complaint.dm': 'Убийство и урон без повода',
   'complaint.scam': 'Обман и мошенничество', 'complaint.rmt_ads': 'Реклама и продажа за реальные деньги', 'complaint.admin': 'Жалоба на администратора или апелляция',
-  'complaint.other': 'Другое нарушение', 'complaint.invalid': 'Не жалоба или нет описания', 'report.question': 'Вопрос по игре',
+  'unclassified': 'Не определено (нужен ручной разбор)', 'complaint.other': 'Другое нарушение', 'complaint.invalid': 'Не жалоба или нет описания', 'report.question': 'Вопрос по игре',
   'report.help': 'Просьба о помощи (застрял, баг)', 'report.complaint': 'Жалоба на игрока из игры', 'report.account': 'Аккаунт и доступ',
   'report.payment': 'Платёж и донат', 'report.offtopic': 'Оффтоп или пустое сообщение',
 };
@@ -86,9 +86,9 @@ const isUrgent = t => isOpen(t) && ['p0', 'p1'].includes(t.result.priority);
 const title = t => CATEGORY[t.result.category] || t.result.category;
 
 function toast(text, kind = '') {
-  const node = h('div', { class: 'toast ' + kind, text });
+  const node = h('div', { class: 'toast ' + kind }, h('span', { text }), h('button', { type: 'button', 'aria-label': 'Закрыть уведомление', text: '\u00d7', onclick: () => node.remove() }));
   $('#toasts').append(node);
-  setTimeout(() => node.remove(), kind === 'error' ? 7000 : 4000);
+  setTimeout(() => node.remove(), kind === 'error' ? 9000 : 4500);
 }
 function badge(text, tone, iconName) { return h('span', { class: 'badge', 'data-tone': tone }, iconName ? icon(iconName) : null, text); }
 
@@ -113,7 +113,7 @@ function setServiceState(kind, text) {
   const chip = $('#status-chip'); chip.dataset.state = kind;
   $('#status-text').textContent = text || { ok: 'Помощник работает', warn: 'Помощник в ручном режиме', error: 'Нет связи с сервисом', loading: 'Проверяем помощника' }[kind];
   const banner = $('#banner');
-  if (kind === 'warn') { banner.hidden = false; banner.className = 'banner'; banner.textContent = 'Правила не загружены, поэтому помощник не разбирает обращения. Все обращения придётся обрабатывать вручную. Укажите путь к rules.json в GRAND_RULES_PATH и перезапустите программу.'; }
+  if (kind === 'warn') { banner.hidden = false; banner.className = 'banner'; banner.replaceChildren(h('span', { text: 'Правила игры не загружены, поэтому помощник не разбирает обращения. ' }), h('button', { type: 'button', class: 'link-btn', text: 'Загрузить rules.json', onclick: openHelp })); }
   else if (kind === 'error') { banner.hidden = false; banner.className = 'banner error'; banner.textContent = 'Нет связи с сервисом. Данные на экране могут быть устаревшими.'; }
   else banner.hidden = true;
 }
@@ -121,6 +121,7 @@ async function refreshStatus() {
   try {
     const data = await (await fetch('/api/status', { credentials: 'same-origin' })).json();
     state.status = data;
+    $('#rules-box').hidden = data.rules_loaded;
     if (!data.rules_loaded) setServiceState('warn');
     else setServiceState('ok', 'Помощник работает · ' + MODE[data.mode]);
     renderLive();
@@ -188,6 +189,26 @@ async function loadQueue(keepSelection = true) {
   renderQueue();
 }
 
+/* ---------- tabs ---------- */
+const TABS = ['case', 'reply', 'files', 'history'];
+function selectTab(name, focus = false) {
+  for (const key of TABS) {
+    const on = key === name; const tab = $('#tab-' + key);
+    tab.setAttribute('aria-selected', String(on)); tab.tabIndex = on ? 0 : -1; $('#panel-' + key).hidden = !on;
+    if (on && focus) tab.focus();
+  }
+  if (name === 'history') loadAudit();
+}
+$$('.tab').forEach(tab => {
+  tab.addEventListener('click', () => selectTab(tab.id.slice(4)));
+  tab.addEventListener('keydown', event => {
+    const i = TABS.indexOf(tab.id.slice(4)); let n = null;
+    if (event.key === 'ArrowRight') n = (i + 1) % TABS.length; else if (event.key === 'ArrowLeft') n = (i + TABS.length - 1) % TABS.length;
+    else if (event.key === 'Home') n = 0; else if (event.key === 'End') n = TABS.length - 1;
+    if (n !== null) { event.preventDefault(); selectTab(TABS[n], true); }
+  });
+});
+
 /* ---------- ticket ---------- */
 function nextStep(t) {
   const hint = {
@@ -200,7 +221,7 @@ function nextStep(t) {
   }[t.status];
   return hint;
 }
-function renderTicket(t) {
+function renderTicket(t, keepTab) {
   state.current = t;
   const p = PRIORITY[t.result.priority] || PRIORITY.p3; const s = STATUS[t.status]; const r = t.result;
   $('#ws-empty').hidden = true; $('#ticket').hidden = false;
@@ -240,12 +261,12 @@ function renderTicket(t) {
   const closedTicket = !isOpen(t);
   $('#escalate').disabled = closedTicket || !(TRANSITIONS[t.status] || []).includes('escalated');
   ['send', 'check', 'save'].forEach(id => { $('#' + id).disabled = closedTicket; }); draft.readOnly = closedTicket;
-  $('#history').open = false; $('#audit').replaceChildren();
+  $('#audit').replaceChildren(); $('#draft-count').dataset.note = ''; updateDraftState(); selectTab(keepTab || 'case');
 }
 function updateDraftState() {
   const t = state.current; if (!t) return; const text = $('#draft').value; const dirty = text !== t.draft_text; const badgeEl = $('#draft-state');
   const [label, tone] = dirty ? ['Есть несохранённые изменения', 'warn'] : t.draft_approved ? ['Проверен', 'ok'] : ['Не проверен', 'low'];
-  badgeEl.textContent = label; badgeEl.dataset.tone = tone; $('#draft-count').textContent = text.length + ' из 20 000 символов';
+  badgeEl.textContent = label; badgeEl.dataset.tone = tone; const note = $('#draft-count').dataset.note; $('#draft-count').textContent = text.length + ' из 20 000 символов' + (note && !dirty ? ' · ' + note : '');
 }
 function renderStatusActions(t) {
   const box = $('#status-actions'); box.replaceChildren();
@@ -256,6 +277,7 @@ function renderStatusActions(t) {
   }
 }
 async function openTicket(id, push) {
+  if (isDirty() && state.current?.id !== id) { try { await saveDraft(); } catch (error) { toast('Черновик не сохранён: ' + error.message, 'error'); return; } }
   let ticket = state.tickets.find(t => t.id === id);
   try { ticket = await http('/admin/api/tickets/' + encodeURIComponent(id)); } catch (error) { toast(error.message, 'error'); return; }
   renderTicket(ticket); renderQueue();
@@ -265,11 +287,12 @@ async function openTicket(id, push) {
   loadAttachments(id);
 }
 async function loadAttachments(id) {
-  const box = $('#t-files'); box.replaceChildren(); box.hidden = true;
+  const box = $('#t-files'); box.replaceChildren(); $('#files-empty').hidden = false; $('#files-count').hidden = true;
+  $('#files-note').hidden = !(state.current?.request.images_count);
   try {
     const data = await http('/admin/api/tickets/' + encodeURIComponent(id) + '/attachments');
     if (state.current?.id !== id || !data.items.length) return;
-    box.hidden = false;
+    $('#files-empty').hidden = true; $('#files-count').hidden = false; $('#files-count').textContent = data.items.length;
     for (const item of data.items) box.append(h('a', { href: '/admin/api/tickets/' + encodeURIComponent(id) + '/attachments/' + encodeURIComponent(item.id), download: '' }, icon('file'), item.filename + ' (' + Math.max(1, Math.round(item.size / 1024)) + ' КБ)'));
   } catch { /* attachments are optional */ }
 }
@@ -290,7 +313,8 @@ async function run(task) {
   try { await task(); } catch (error) { toast(error.message, 'error'); if (/изменил|Обновите/.test(error.message)) await loadQueue().catch(() => {}); }
   finally { setBusy(false); }
 }
-function applyTicket(ticket) { state.tickets = state.tickets.map(t => t.id === ticket.id ? ticket : t); renderTicket(ticket); renderQueue(); }
+function currentTab() { return TABS.find(k => $('#tab-' + k).getAttribute('aria-selected') === 'true'); }
+function applyTicket(ticket) { state.tickets = state.tickets.map(t => t.id === ticket.id ? ticket : t); renderTicket(ticket, currentTab()); renderQueue(); }
 async function saveDraft() {
   const t = state.current; const text = $('#draft').value;
   if (!text.trim()) throw new Error('Ответ пустой. Напишите текст или верните текст помощника.');
@@ -314,19 +338,35 @@ async function sendReply() {
   let t = state.current;
   if (['new', 'needs_info'].includes(t.status)) t = await changeStatus('in_review', '');
   await changeStatus('resolved', $('#note').value.trim() || 'Ответ проверен и отмечен как отправленный');
+  selectTab('reply');
   try { await navigator.clipboard.writeText(state.current.draft_text); toast('Ответ отмечен как отправленный и скопирован. Отправьте его игроку в игре.', 'ok'); }
   catch { toast('Ответ отмечен как отправленный. Скопируйте текст кнопкой «Скопировать» и отправьте игроку.', 'ok'); }
 }
 
 /* ---------- wiring ---------- */
-$('#draft').addEventListener('input', updateDraftState);
+let autosaveTimer = null;
+function isDirty() { const t = state.current; return !!t && !$('#draft').readOnly && $('#draft').value !== t.draft_text; }
+$('#draft').addEventListener('input', () => {
+  updateDraftState(); clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(async () => {
+    if (state.busy || !isDirty() || !$('#draft').value.trim()) return;
+    setBusy(true);
+    try { await saveDraft(); $('#draft-count').dataset.note = 'Сохранено автоматически'; updateDraftState(); }
+    catch { $('#draft-count').dataset.note = 'Не удалось сохранить автоматически'; updateDraftState(); }
+    finally { setBusy(false); }
+  }, 1500);
+});
+window.addEventListener('beforeunload', event => { if (isDirty()) { event.preventDefault(); event.returnValue = ''; } });
+$('#next-ticket').addEventListener('click', () => {
+  const list = visible().filter(t => t.id !== state.current?.id && isOpen(t));
+  if (list.length) openTicket(list[0].id, true); else { toast('Больше нет обращений в этом разделе.', 'ok'); showQueue(); }
+});
 $('#restore').addEventListener('click', () => { const t = state.current; if (t) { $('#draft').value = t.result.draft_reply.text; updateDraftState(); } });
 $('#save').addEventListener('click', () => run(async () => { await saveDraft(); toast('Ответ сохранён.', 'ok'); }));
 $('#check').addEventListener('click', () => run(verify));
 $('#send').addEventListener('click', () => run(sendReply));
 $('#escalate').addEventListener('click', () => run(async () => { await changeStatus('escalated'); toast('Передано на проверку старшему.', 'ok'); }));
 $('#copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('#draft').value); toast('Текст скопирован.', 'ok'); } catch { toast('Браузер не разрешил копирование. Выделите текст и скопируйте вручную.', 'error'); } });
-$('#history').addEventListener('toggle', () => { if ($('#history').open) loadAudit(); });
 $('#back').addEventListener('click', () => { if (location.hash) history.back(); else showQueue(); });
 function showQueue() { $('#layout').dataset.view = 'queue'; state.current = null; $('#ticket').hidden = true; $('#ws-empty').hidden = false; renderQueue(); }
 window.addEventListener('popstate', () => { const id = location.hash.slice(1); if (id) openTicket(id, false); else showQueue(); });
@@ -347,13 +387,22 @@ $$('dialog [data-close]').forEach(button => button.addEventListener('click', () 
 $$('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
 const openHelp = () => { renderLive(); refreshStatus(); $('#help-dialog').showModal(); };
 $('#open-help').addEventListener('click', openHelp); $('#status-chip').addEventListener('click', openHelp); $('#selftest').addEventListener('click', runSelftest);
+$('#rules-pick').addEventListener('click', () => $('#rules-file').click());
+$('#rules-file').addEventListener('change', async event => {
+  const file = event.target.files[0]; event.target.value = ''; if (!file) return;
+  try {
+    const body = JSON.parse(await file.text());
+    await http('/admin/api/rules', { method: 'POST', body });
+    await refreshStatus(); toast('Правила загружены. Помощник готов к работе.', 'ok');
+  } catch (error) { toast(error instanceof SyntaxError ? 'Файл не похож на JSON. Выберите rules.json.' : error.message, 'error'); }
+});
 const SAMPLE = 'Игрок Arman_Petrov оскорбил меня и мою семью в чате на 12 сервере, скрины есть, 2.1 ОП';
 const openNew = () => { $('#new-form').reset(); $('#new-dialog').showModal(); $('#n-text').focus(); };
 $('#new-ticket').addEventListener('click', openNew); $('#empty-new').addEventListener('click', openNew);
-$('#n-sample').addEventListener('click', () => { $('#n-kind').value = 'complaint'; $('#n-text').value = SAMPLE; $('#n-files').value = '2'; });
+$('#n-sample').addEventListener('click', () => { $('#n-kind').value = 'complaint'; $('#n-text').value = SAMPLE; $('#n-files').checked = true; });
 $('#new-form').addEventListener('submit', async event => {
   event.preventDefault(); const submit = $('#n-submit'); submit.disabled = true; submit.setAttribute('aria-busy', 'true');
-  const request = { kind: $('#n-kind').value, messages: [{ role: 'player', text: $('#n-text').value }], images_count: Number($('#n-files').value) || 0 };
+  const request = { kind: $('#n-kind').value, messages: [{ role: 'player', text: $('#n-text').value }], images_count: $('#n-files').checked ? 1 : 0 };
   if ($('#n-nick').value.trim()) request.reported_nick = $('#n-nick').value.trim(); if ($('#n-region').value.trim()) request.region = $('#n-region').value.trim();
   try {
     const ticket = await http('/admin/api/tickets', { method: 'POST', body: { request } });
@@ -363,10 +412,10 @@ $('#new-form').addEventListener('submit', async event => {
 });
 /* theme */
 function applyTheme(theme) { if (theme) document.documentElement.dataset.theme = theme; else delete document.documentElement.dataset.theme;
-  const dark = theme === 'dark' || (!theme && matchMedia('(prefers-color-scheme: dark)').matches); $('#theme use').setAttribute('href', dark ? '#i-sun' : '#i-moon'); }
+  const dark = theme === 'dark'; $('#theme use').setAttribute('href', dark ? '#i-sun' : '#i-moon'); }
 let savedTheme = null; try { savedTheme = localStorage.getItem('grand-theme'); } catch { /* storage may be blocked */ }
-applyTheme(savedTheme);
-$('#theme').addEventListener('click', () => { const dark = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+$('#theme').addEventListener('click', () => { const dark = document.documentElement.dataset.theme === 'dark';
   const next = dark ? 'light' : 'dark'; applyTheme(next); try { localStorage.setItem('grand-theme', next); } catch { /* ignore */ } });
 
 (async function start() {

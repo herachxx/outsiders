@@ -15,15 +15,6 @@
   --crit: #ff8a80; --crit-bg: #3a1714; --high: #ffb066; --high-bg: #35230f; --norm: #8fb4ff; --norm-bg: #162540;
   --low: #b5bfcd; --low-bg: #232932; --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0e1116; --surface: #161a21; --surface-2: #1c212a; --text: #eaedf2; --muted: #a2acba;
-    --line: #2a303b; --line-strong: #3a4250; --accent-soft: #2b2410;
-    --focus: #7aa2ff; --ok: #5fd39a; --ok-bg: #12301f; --warn: #ffbf5e; --warn-bg: #33250d;
-    --crit: #ff8a80; --crit-bg: #3a1714; --high: #ffb066; --high-bg: #35230f; --norm: #8fb4ff; --norm-bg: #162540;
-    --low: #b5bfcd; --low-bg: #232932; --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
-  }
-}
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; overflow-x: hidden; background: var(--bg); color: var(--text); font: 16px/1.5 var(--font); min-height: 100dvh; }
@@ -174,3 +165,14 @@ dialog::backdrop { background: rgba(10,14,22,.55); }
 @media (max-width: 480px) { body { font-size: 16px; } .ticket-title h2 { font-size: 20px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 @media print { .topbar, .queue, .reply-actions { display: none; } }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 4px 0 16px; overflow-x: auto; }
+.tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 0 14px; min-height: 44px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tab:hover { color: var(--text); } .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.tab:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.tab-count { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--low-bg); color: var(--low); font-size: 12px; text-align: center; }
+.panel > .card { margin-bottom: 16px; } .next-row { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+.toast { display: flex; align-items: flex-start; gap: 10px; } .toast span { flex: 1; }
+.toast button { background: none; border: 0; color: inherit; cursor: pointer; font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; margin: -6px -8px -6px 0; border-radius: 8px; opacity: .85; }
+.toast button:hover { opacity: 1; background: rgba(255,255,255,.15); } .toast button:focus-visible { outline: 2px solid #fff; }
+.check-field{grid-column:1/-1}.check-field label{display:flex;align-items:center;gap:10px;min-height:44px;font-weight:500}.check-field input{width:20px;height:20px;min-height:0}

@@ -1,3 +1,4 @@
+const selectedFiles=[];
 'use strict';
 const $ = id => document.getElementById(id);
 const STORE_KEY = 'grand-support-demo-history-v1';
@@ -67,7 +68,7 @@ async function submit(event){
  const button=$('submit-ticket');button.disabled=true;button.classList.add('loading');button.querySelector('span').textContent='Обрабатываем…';
  const status=$('form-status');status.textContent='Проверяем обращение и готовим предварительный ответ…';status.classList.remove('error');
  const cat=categories[selectedCategory];
- const files=Array.from($('screenshot-files').files);if(files.length>4||files.some(f=>f.size>5*1024*1024)){status.textContent='Выберите не более 4 изображений по 5 МБ.';status.classList.add('error');button.disabled=false;button.classList.remove('loading');button.querySelector('span').textContent='Получить ответ';return;}
+ const files=selectedFiles.slice();if(files.length>4||files.some(f=>f.size>5*1024*1024)){status.textContent='Выберите не более 4 изображений по 5 МБ.';status.classList.add('error');button.disabled=false;button.classList.remove('loading');button.querySelector('span').textContent='Получить ответ';return;}
  const request={kind:cat.kind,messages:[{role:'player',text:raw}],images_count:files.length,region:$('ticket-server').value.trim()||null,reported_nick:selectedCategory==='complaint'?($('ticket-nick').value.trim()||null):null,reporter_hash:anonymousId||null};
  const started=performance.now();
  try{
@@ -81,7 +82,7 @@ async function submit(event){
   if(uploaded)showAnswer(result,performance.now()-started,selectedCategory);
   status.textContent=`${window.GrandI18n?.tr('Обращение')||'Обращение'} ${ticket.id} · ${window.GrandI18n?.tr('Сохранено')||'Сохранено'}${uploadFailed?` · ${window.GrandI18n?.tr('Не загружено вложений')||'Не загружено вложений'}: ${uploadFailed}`:''}.`;
   const item={id:ticket.id,accessToken:ticket.access_token,status:ticket.status==='closed'?'Закрыто':'Новое',text:raw,category:cat.label,categoryKey:selectedCategory,time:Date.now(),answer:result.draft_reply.text,needsHuman:!!result.needs_human,result};
-  recent.push(item);recent=recent.slice(-15);storeRecent();$('screenshot-files').value='';$('file-count').textContent='Файлы не выбраны';
+  recent.push(item);recent=recent.slice(-15);storeRecent();selectedFiles.length=0;renderFiles();
   window.GrandI18n?.apply();$('answer-panel').scrollIntoView({behavior:'smooth',block:'start'});
  }catch(error){status.textContent=window.GrandI18n?.tr(error.message)||error.message;status.classList.add('error');$('answer-panel').hidden=true;}
  finally{button.disabled=false;button.classList.remove('loading');button.querySelector('span').textContent=window.GrandI18n?.tr('Получить ответ')||'Получить ответ';}
@@ -96,6 +97,11 @@ $('new-ticket').addEventListener('click',()=>{$('answer-panel').hidden=true;$('t
 $('clear-history').addEventListener('click',()=>{if(!confirm(window.GrandI18n?.tr('Очистить историю обращений в этой вкладке?')||'Очистить историю обращений в этой вкладке?'))return;recent=[];storeRecent();renderHistory();});
 pickCategory('question');updateNavCount();
 
-const uploadInput=document.getElementById("screenshot-files");if(uploadInput)uploadInput.addEventListener("change",()=>{document.getElementById("file-count").textContent=uploadInput.files.length?`${window.GrandI18n?.tr('Выбрано файлов')||'Выбрано файлов'}: ${uploadInput.files.length}`:(window.GrandI18n?.tr('Файлы не выбраны')||'Файлы не выбраны');});
+
 
 (async()=>{const box=document.getElementById('assistant-status');if(!box)return;try{const d=await(await fetch('/api/status')).json();box.dataset.state=d.rules_loaded?'ok':'warn';box.textContent=d.rules_loaded?'Помощник работает':'Помощник в ручном режиме: правила не загружены'}catch{box.dataset.state='error';box.textContent='Нет связи с сервисом'}})();
+
+function tx(k){return(window.GrandI18n&&window.GrandI18n.tr?window.GrandI18n.tr(k):k)||k}
+function renderFiles(){const list=document.getElementById('file-list'),count=document.getElementById('file-count');if(!list)return;list.replaceChildren();selectedFiles.forEach((f,i)=>{const li=document.createElement('li');const name=document.createElement('span');name.textContent=f.name+' ('+Math.max(1,Math.round(f.size/1024))+' КБ)';const rm=document.createElement('button');rm.type='button';rm.textContent='×';rm.setAttribute('aria-label',tx('Убрать файл')+': '+f.name);rm.addEventListener('click',()=>{selectedFiles.splice(i,1);renderFiles()});li.append(name,rm);list.append(li)});count.textContent=selectedFiles.length?tx('Выбрано файлов')+': '+selectedFiles.length+' / 4':tx('Файлы не выбраны')}
+function addFiles(files){const notes=[];for(const f of files){if(!/^image\/(jpeg|png|webp)$/.test(f.type)){notes.push(f.name+': '+tx('нужен JPG, PNG или WebP'));continue}if(f.size>5*1024*1024){notes.push(f.name+': '+tx('больше 5 МБ'));continue}if(selectedFiles.some(x=>x.name===f.name&&x.size===f.size))continue;if(selectedFiles.length>=4){notes.push(tx('Можно прикрепить не более 4 файлов'));break}selectedFiles.push(f)}renderFiles();if(notes.length){document.getElementById('file-count').textContent=notes.join('; ')}}
+(()=>{const input=document.getElementById('screenshot-files'),pick=document.getElementById('file-pick'),drop=document.getElementById('file-drop');if(!input)return;pick.addEventListener('click',()=>input.click());input.addEventListener('change',()=>{addFiles(Array.from(input.files));input.value=''});['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('drag')}));['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('drag')}));drop.addEventListener('drop',ev=>addFiles(Array.from(ev.dataTransfer.files)))})();

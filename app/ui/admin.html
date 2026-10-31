@@ -113,11 +113,18 @@
 
       <div id="next-step" class="next-step" role="note"></div>
 
+      <div class="tabs" role="tablist" aria-label="Разделы обращения">
+        <button type="button" role="tab" class="tab" id="tab-case" aria-controls="panel-case" aria-selected="true">Обращение</button>
+        <button type="button" role="tab" class="tab" id="tab-reply" aria-controls="panel-reply" aria-selected="false" tabindex="-1">Ответ и статус</button>
+        <button type="button" role="tab" class="tab" id="tab-files" aria-controls="panel-files" aria-selected="false" tabindex="-1">Материалы <span id="files-count" class="tab-count" hidden></span></button>
+        <button type="button" role="tab" class="tab" id="tab-history" aria-controls="panel-history" aria-selected="false" tabindex="-1">История</button>
+      </div>
+
+      <div role="tabpanel" id="panel-case" aria-labelledby="tab-case" class="panel">
       <section class="card" aria-labelledby="h-player">
         <h3 id="h-player"><svg aria-hidden="true"><use href="#i-user"/></svg>Что написал игрок</h3>
         <blockquote id="t-text" class="player-text"></blockquote>
         <dl id="t-facts" class="facts"></dl>
-        <div id="t-files" class="files" hidden></div>
       </section>
 
       <section class="card assistant" aria-labelledby="h-assistant">
@@ -141,6 +148,9 @@
         <details class="tech"><summary>Технические коды</summary><p id="a-tech" class="mono small"></p></details>
       </section>
 
+      </div>
+
+      <div role="tabpanel" id="panel-reply" aria-labelledby="tab-reply" class="panel" hidden>
       <section class="card reply" aria-labelledby="h-reply">
         <div class="reply-head">
           <h3 id="h-reply"><svg aria-hidden="true"><use href="#i-send"/></svg>Ответ игроку</h3>
@@ -167,10 +177,24 @@
         <div id="status-actions" class="status-actions"></div>
       </section>
 
-      <details class="card" id="history">
-        <summary><svg aria-hidden="true"><use href="#i-clock"/></svg>История действий</summary>
-        <ol id="audit" class="audit"></ol>
-      </details>
+      <div class="next-row"><button type="button" class="btn" id="next-ticket"><span>Следующее обращение</span></button></div>
+      </div>
+
+      <div role="tabpanel" id="panel-files" aria-labelledby="tab-files" class="panel" hidden>
+        <section class="card" aria-labelledby="h-files">
+          <h3 id="h-files"><svg aria-hidden="true"><use href="#i-file"/></svg>Вложения игрока</h3>
+          <p id="files-empty" class="muted">К обращению ничего не приложено.</p>
+          <p id="files-note" class="muted small" hidden>Помощник не просматривает вложения. Проверьте их сами.</p>
+          <div id="t-files" class="files"></div>
+        </section>
+      </div>
+
+      <div role="tabpanel" id="panel-history" aria-labelledby="tab-history" class="panel" hidden>
+        <section class="card" aria-labelledby="h-history">
+          <h3 id="h-history"><svg aria-hidden="true"><use href="#i-clock"/></svg>История действий</h3>
+          <ol id="audit" class="audit"></ol>
+        </section>
+      </div>
     </article>
   </section>
 </main>
@@ -178,6 +202,12 @@
 <dialog id="help-dialog" aria-labelledby="help-title">
   <div class="dialog-body">
     <div class="dialog-head"><h2 id="help-title">Как работает помощник</h2><button type="button" class="icon-btn" data-close aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></button></div>
+    <section id="rules-box" hidden>
+      <h3>Загрузить правила игры</h3>
+      <p class="muted">Без файла правил помощник не разбирает обращения и не подбирает пункты. Выберите файл <code>rules.json</code> из пакета организаторов. Он сохранится на этом компьютере (папка <code>data</code>), перезапуск не нужен.</p>
+      <button type="button" class="btn btn-primary" id="rules-pick">Выбрать rules.json</button>
+      <input type="file" id="rules-file" accept="application/json,.json" hidden>
+    </section>
     <section aria-labelledby="live-title">
       <h3 id="live-title">Состояние сейчас</h3>
       <ul id="live" class="live"></ul>
@@ -207,9 +237,9 @@
     <label for="n-text" class="label">Сообщение игрока</label>
     <textarea id="n-text" rows="5" maxlength="20000" required></textarea>
     <div class="row">
-      <div><label for="n-nick" class="label">Ник обвиняемого (необязательно)</label><input id="n-nick" maxlength="100"></div>
-      <div><label for="n-region" class="label">Сервер (необязательно)</label><input id="n-region" maxlength="100"></div>
-      <div><label for="n-files" class="label">Вложений</label><input id="n-files" type="number" min="0" max="20" value="0"></div>
+      <div><label for="n-nick" class="label">Ник обвиняемого</label><input id="n-nick" placeholder="необязательно" maxlength="100"></div>
+      <div><label for="n-region" class="label">Сервер</label><input id="n-region" placeholder="необязательно" maxlength="100"></div>
+      <div class="check-field"><label><input id="n-files" type="checkbox"> К обращению приложены скриншоты или видео</label></div>
     </div>
     <div class="dialog-foot"><button type="button" class="link-btn" id="n-sample">Подставить пример</button><span class="spacer"></span><button type="button" class="btn" data-close>Отмена</button><button type="submit" class="btn btn-primary" id="n-submit">Создать и разобрать</button></div>
   </form>

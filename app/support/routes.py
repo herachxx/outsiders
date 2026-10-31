@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from collections import defaultdict,deque
 from datetime import datetime,timezone
 import time
-from fastapi import APIRouter, HTTPException, Request, Response, Header, Query
+from fastapi import APIRouter, Body, HTTPException, Request, Response, Header, Query
 from pydantic import Field
 from typing import Literal
 
@@ -248,6 +248,24 @@ def create_routes(service, store: TicketStore):
                         'cited': [c['ref'] for c in result['draft_reply']['cited']], 'ms': round((time.perf_counter() - started) * 1000, 2)})
         return {'status': info, 'results': out}
 
+    @router.post('/admin/api/rules')
+    def load_rules(request: Request, body: dict = Body(...)):
+        """Let the operator load the game rules file from the panel; it is saved locally and used at once."""
+        admin(request, True)
+        from app.rules import RuleIndex
+        try:
+            index = RuleIndex.from_data(body)
+        except (KeyError, TypeError, ValueError):
+            raise HTTPException(422, 'Это не файл правил Grand Mobile (rules.json). Выберите файл из пакета организаторов.') from None
+        if not index.rules:
+            raise HTTPException(422, 'В файле нет ни одного пункта правил.')
+        target = Path(os.environ.get('GRAND_DB_PATH', 'data/support.sqlite3')).parent / 'rules.json'
+        target.parent.mkdir(parents=True, exist_ok=True)
+        import json
+        target.write_text(json.dumps(body, ensure_ascii=False), encoding='utf-8')
+        service.rules = index
+        return describe_service(service)
+
     @router.post('/admin/api/logout')
     def logout(request: Request,response: Response):
         admin(request,True);response.delete_cookie(auth.COOKIE,path='/');return {'ok':True}
@@ -312,7 +330,7 @@ def create_routes(service, store: TicketStore):
     def verify(ticket_id:str,payload:Version,request:Request):
         actor=admin(request,True);item=get(ticket_id)
         if item['version']!=payload.version:raise HTTPException(409,'Ticket changed; reload')
-        if not service.rules.rules:raise HTTPException(503,'Rules are not loaded')
+        if not service.rules.rules:raise HTTPException(503,'Правила не загружены. Нажмите на статус помощника вверху и загрузите файл rules.json.')
         try:
             triage_request=TriageRequest.model_validate(item['request'])
             draft={**item['result']['draft_reply'],'text':item['draft_text']}
