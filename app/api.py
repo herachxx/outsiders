@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Literal
 from pydantic import ValidationError
 
-from fastapi import Body, FastAPI, HTTPException, Header
+from fastapi import Body, FastAPI, HTTPException, Header, Request
 
 from .core import TriageService
 from .rules import RuleIndex
@@ -12,9 +12,12 @@ from .schemas import TriageRequest, TriageResponse, SubmissionResponse
 from .submission import to_submission
 from .classifier import CategoryClassifier
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 from .schemas import StrictModel, Draft
+from .support import auth
+from .support.routes import create_routes
+from .support.store import TicketStore
 
 
 class DraftCheckRequest(StrictModel):
@@ -56,13 +59,48 @@ def create_app(service: TriageService | None = None) -> FastAPI:
             if decisions:
                 decisions.close()
 
+    store = TicketStore(os.environ.get('GRAND_DB_PATH', 'data/support.sqlite3'))
     app = FastAPI(title='Grand Mobile Support Copilot', version='0.1.0', lifespan=lifespan)
+
+    @app.middleware('http')
+    async def safe_headers(request, call_next):
+        response = await call_next(request)
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Referrer-Policy'] = 'no-referrer'
+        response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
+        policy = ("default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; "
+                  "script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'")
+        response.headers['Content-Security-Policy'] = policy + ('; upgrade-insecure-requests' if request.url.scheme == 'https' else '')
+        return response
     ui_path = Path(__file__).parent / 'ui'
     app.mount('/ui', StaticFiles(directory=ui_path), name='ui')
 
     @app.get('/', include_in_schema=False)
     def dashboard():
         return FileResponse(ui_path / 'index.html', headers={'Cache-Control': 'no-store'})
+
+    @app.get('/admin', include_in_schema=False)
+    def operator_dashboard(request: Request):
+        if not auth.configured():
+            return RedirectResponse('/admin/setup', status_code=303)
+        if not auth.session(request):
+            return RedirectResponse('/admin/login', status_code=303)
+        return FileResponse(ui_path / 'admin.html', headers={'Cache-Control': 'no-store'})
+
+    @app.get('/admin/login', include_in_schema=False)
+    def operator_login(request: Request):
+        if not auth.configured():
+            return RedirectResponse('/admin/setup', status_code=303)
+        if auth.session(request):
+            return RedirectResponse('/admin', status_code=303)
+        return FileResponse(ui_path / 'login.html', headers={'Cache-Control': 'no-store'})
+
+    @app.get('/admin/setup', include_in_schema=False)
+    def operator_setup(request: Request):
+        if auth.configured():
+            return RedirectResponse('/admin/login', status_code=303)
+        return FileResponse(ui_path / 'setup.html', headers={'Cache-Control': 'no-store'})
 
     @app.post('/draft/check')
     def check_edited_draft(payload: DraftCheckRequest):
@@ -163,7 +201,18 @@ def create_app(service: TriageService | None = None) -> FastAPI:
             raise HTTPException(status_code=503, detail="Rules are not loaded")
         return {"status": "ok", "rules_loaded": True}
 
+    app.include_router(create_routes(service, store))
     return app
 
 
-app = create_app()
+_app = None
+
+
+def __getattr__(name):
+    """`uvicorn app.api:app` builds the application on first access, so importing this module has no side effects."""
+    global _app
+    if name == 'app':
+        if _app is None:
+            _app = create_app()
+        return _app
+    raise AttributeError(name)
