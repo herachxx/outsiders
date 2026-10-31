@@ -126,7 +126,7 @@ function select(item){
  $('decision-category').textContent=title;$('decision-priority').textContent=(item.result.priority||'p2').toUpperCase();
  $('ticket-status').value=item.status;$('status-note').value='';
  $('draft').value=item.draft_text||'';$('draft').disabled=['resolved','closed'].includes(item.status);
- $('copy').disabled=!approvedText;$('check').disabled=['resolved','closed'].includes(item.status);
+ $('copy').disabled=!approvedText;$('check').disabled=['resolved','closed'].includes(item.status);$('send').disabled=['resolved','closed'].includes(item.status);
  $('save').disabled=['resolved','closed'].includes(item.status);
  $('draft-state').textContent=item.draft_approved?'Проверен на сервере':'Требуется проверка';
  $('draft-length').textContent=$('draft').value.length+' символов';
@@ -147,6 +147,17 @@ $('check').addEventListener('click',()=>action(async()=>{
  const item=await saveDraft();const checked=await http(`/admin/api/tickets/${encodeURIComponent(item.id)}/verify`,{method:'POST',body:{version:item.version}});
  if(checked.approved){queue=queue.map(t=>t.id===item.id?checked.ticket:t);select(checked.ticket);notify('Черновик проверен. Можно скопировать ответ.');}
  else{approvedText=null;$('copy').disabled=true;$('draft-state').textContent='Не прошёл проверку';notify('Не пройдена проверка: '+checked.reasons.join(', '));}
+}));
+$('send').addEventListener('click',()=>action(async()=>{
+ // "Отправить": verify the draft, then record the ticket as answered. Nothing is sent to the game.
+ const item=await saveDraft();const base=`/admin/api/tickets/${encodeURIComponent(item.id)}`;
+ const checked=await http(base+'/verify',{method:'POST',body:{version:item.version}});
+ if(!checked.approved){approvedText=null;$('draft-state').textContent='Не прошёл проверку';notify('Не отправлено, не пройдена проверка: '+checked.reasons.join(', '));return;}
+ let ticket=checked.ticket;
+ if(['new','needs_info'].includes(ticket.status))ticket=await http(base+'/status',{method:'POST',body:{version:ticket.version,status:'in_review',note:''}});
+ ticket=await http(base+'/status',{method:'POST',body:{version:ticket.version,status:'resolved',note:'Ответ проверен и отмечен как отправленный оператором'}});
+ queue=queue.map(t=>t.id===ticket.id?ticket:t);select(ticket);await loadAudit();
+ notify('Отмечено как отправленное. В Grand Mobile ничего не отправлено: скопируйте текст и отправьте его вручную.');
 }));
 $('copy').addEventListener('click',()=>action(async()=>{
  if(!current?.draft_approved||current.draft_text!==$('draft').value)throw Error('Сначала проверьте черновик');
