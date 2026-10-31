@@ -27,3 +27,16 @@ def test_missing_fields_and_evidence_change_draft():
 
 def test_unknown_language_uses_explicit_english_draft_label():
     assert build_draft(request(), 'report.offtopic', 'und', False, [])['lang'] == 'en'
+
+
+@pytest.mark.parametrize('lang', ['ru', 'kk', 'uz', 'en'])
+@pytest.mark.parametrize('region', ['cis', 'uz', 'kz', ' CIS '])
+def test_geographic_region_does_not_count_as_game_server(lang, region):
+    from app.draft import templates
+    result = build_draft(request(region=region), 'report.payment', lang, False, [])
+    assert templates()[lang]['server_missing'] in result['text']
+
+
+def test_explicit_server_still_avoids_duplicate_question():
+    result = build_draft(request(region='Server 17'), 'report.help', 'ru', False, [])
+    assert 'Укажите сервер' not in result['text']

@@ -23,7 +23,10 @@ def build_draft(request, category, lang, has_evidence, cited):
         parts.append(phrases['evidence_present' if has_evidence else 'evidence_missing'])
         if not request.reported_nick and not request.reported_hash:
             parts.append(phrases['target_missing'])
-    if request.region is None or not request.region.strip():
+    # Dataset region codes locate the audience, not an individual game server.
+    # The current UI also uses this field for an explicitly entered server.
+    region = (request.region or '').strip().casefold()
+    if not region or region in {'cis', 'uz', 'kz'}:
         parts.append(phrases['server_missing'])
     if cited:
         refs = ', '.join(dict.fromkeys(f"{c['section_id']}/{c['ref']}" for c in cited))
