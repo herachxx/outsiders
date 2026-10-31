@@ -23,6 +23,15 @@ def ticket(text, kind="complaint", **extra):
     return {"kind": kind, "messages": [{"role": "player", "text": text}], **extra}
 
 
+def test_rule_field_hint_only_applies_when_text_names_no_category():
+    service = TriageService(RuleIndex.from_data(RULES))
+    assert service.triage(ticket("<url>", rule_refs_raw="ДБ, УРП"))["category"] == "complaint.dm"
+    assert service.triage(ticket("<url>", rule_refs_raw="5.2 оп"))["category"] == "complaint.cheat"
+    assert service.triage(ticket("<url>", rule_refs_raw="2.1 ОП"))["category"] == "complaint.insult"
+    assert service.triage(ticket("<url>", rule_refs_raw="жб"))["category"] == "complaint.other"
+    assert service.triage(ticket("оск родни", rule_refs_raw="5.2"))["category"] == "complaint.insult"
+
+
 def test_slang_abbreviations_are_classified_not_other():
     service = TriageService(RuleIndex.from_data(RULES))
     cases = {

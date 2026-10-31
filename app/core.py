@@ -30,6 +30,16 @@ CATEGORY_PATTERNS = {
     ],
 }
 
+# Hints from the player-filled rule field; taxonomy rule refs, not verified claims.
+REF_HINTS = [
+    ("complaint.dm", r"\bgz\b|\bdm\b|\bдм\b|\bdb\b|\bдб\b|\bsk\b|\bск\b|\btk\b|\bтк\b|5\.[34]|\bnrp\b|\bнрп\b|\bурп\b"),
+    ("complaint.cheat", r"5\.2|чит|софт|\bsoft\b|\bсб\b"),
+    ("complaint.scam", r"4\.[12]|скам|\bscam\b"),
+    ("complaint.rmt_ads", r"2\.3|4\.4"),
+    ("complaint.insult", r"\b2\.[146]\b|2\.1.?оп|\bоск|\bosk"),
+]
+
+
 class TriageService:
     def __init__(self, rules: RuleIndex, classifier=None):
         self.rules = rules
@@ -42,7 +52,7 @@ class TriageService:
         search_text = normalize(player_text)
         language_decision = detect(player_text)
         lang = language_decision.lang
-        heuristic_category = self._category(request.kind, search_text)
+        heuristic_category = self._category(request.kind, search_text, request.rule_refs_raw or '')
         predicted = self.classifier.predict(request.kind, search_text) if self.classifier else None
         category = predicted or heuristic_category
         # An uncalibrated model must not override existing sensitive routing.
@@ -110,7 +120,7 @@ class TriageService:
         }
 
     @staticmethod
-    def _category(kind: str, text: str) -> str:
+    def _category(kind: str, text: str, refs: str = '') -> str:
         if kind == 'report':
             sensitive = multilingual_sensitive_category(text)
             if sensitive:
@@ -118,4 +128,11 @@ class TriageService:
         for category, pattern in CATEGORY_PATTERNS[kind]:
             if re.search(pattern, text):
                 return category
-        return "complaint.other" if kind == "complaint" else "report.offtopic"
+        if kind == 'complaint':
+            # The player's own rule field is only a hint, used when the text names no category.
+            refs = normalize(refs or '')
+            for category, pattern in REF_HINTS:
+                if re.search(pattern, refs):
+                    return category
+            return "complaint.other"
+        return "report.offtopic"
