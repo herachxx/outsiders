@@ -129,7 +129,8 @@ def test_specific_complaint_rule_beats_model_but_model_decides_unknown_text():
         return service.triage(dict(kind='complaint', messages=[dict(role='player', text=text)], **extra))['category']
     assert category('оск родни') == 'complaint.insult'
     assert category('<url>', rule_refs_raw='5.2 оп') == 'complaint.cheat'
-    assert category('<url>', rule_refs_raw='жб') == 'complaint.scam'
+    assert category('<url>', rule_refs_raw='жб') == 'complaint.invalid'       # no content: nothing for a model to read
+    assert category('случилась какая-то странная история') == 'complaint.scam'  # no rule decides, the model does
 
 
 def test_training_ignores_outcomes_and_post_admin_text():

@@ -16,12 +16,12 @@ from .safety import check_draft
 
 CATEGORY_PATTERNS = {
     "complaint": [
-        ("complaint.admin", r"админ|администратор|admin|не\s?согл|снят[ье]?.{0,12}(бан|варн|наказ|блок)|разбан|амнисти|пересмотр|перевыда|ошибк\w* бана"),
+        ("complaint.admin", r"админ|администратор|admin|не\s?согл|снят[ье]?.{0,12}(бан|варн|наказ|блок)|разбан|амнисти|пересмотр|перевыда|ошибк\w* бана|\bопру|за что.{0,12}(?:бан|варн|мут|наказ)|(?:бан|варн|мут|наказани\w*).{0,25}(?:не за что|незачто|без причин|несправедлив|необоснован)|не\s?нарушал|(?:у меня|я).{0,15}(?:нет|не).{0,12}(?:чит|софт)|noroziman|xato berilgan|jazo.{0,25}(?:olib|bekor|qanday)|ban (?:olib|yechil)"),
         ("complaint.cheat", r"чит|cheat|aimbot|аимбот|летает|сквозь стен|\bсофт|\bsoft\b|\bфаст|скейт|кулак|прошивает|багоюз|багаюз"),
-        ("complaint.scam", r"обман|мошен|вымог|скам"),
+        ("complaint.scam", r"обман|мошен|вымог|скам|краж|отнял|развод|ограбил"),
         ("complaint.rmt_ads", r"реальн.{0,8}деньг|прода.{0,10}аккаунт|реклам"),
-        ("complaint.insult", r"\bоск|\bosk|оскорб|обзыва|матер|унизи|расизм|национальност|токсич|род(?:ни|ных|ню|ным)|\bмам[ауыеой]\b|\bмать\b|упом|обозвал|послал|[hx]aqorat|\bock\b|порнограф|хуй|хуе|пизд|ебан|шлюх|уебищ|долбаеб|\bсука\b|мразь"),
-        ("complaint.dm", r"\bdm\b|\bдм\b|убил|убива|убийств|застрел|задави|задов|посад\w*.{0,25}(без причин|просто так|не за что)|урон|зел[её]н.{0,5}зон|deathmatch|drive.?by|\bnrp\b|\borp\b|\bурп\b|\bпго\b|\bcop\b"),
+        ("complaint.insult", r"\bоск|\bosk|оскорб|обзыва|матер|унизи|расизм|национальност|токсич|род(?:ни|ных|ню|ным)|\bмам[ауыеой]\b|\bмать\b|упом|обозвал|послал|[hx]aqorat|\bock\b|порнограф|18\+|\bsok(?:di|ib|vot|kan)|onadan|otadan|tuxmat|хуй|хуе|пизд|ебан|шлюх|уебищ|долбаеб|\bсука\b|мразь"),
+        ("complaint.dm", r"\bdm\b|\bдм\b|убил|убива|убийств|застрел|задави|задов|посад\w*.{0,25}(без причин|просто так|не за что)|урон|зел[её]н.{0,5}зон|\bдб\b|\bdb\b|\bsk\b|\bск\b|\btk\b|\bтк\b|тим ?килл|нон ?рп|\bnon ?rp|беспредел|розыск|наручник|задержал|арестовал|kishan|\botib|uldir|oldir|o.ldir|deathmatch|drive.?by|\bnrp\b|\borp\b|\bурп\b|\bпго\b|\bcop\b"),
     ],
     "report": [
         ("report.account", r"взлом|аккаунт|парол|не могу войти|пропал.{0,15}имуществ"),
@@ -166,9 +166,13 @@ class TriageService:
                 return category
         if kind == 'complaint':
             # The player's own rule field is only a hint, used when the text names no category.
-            refs = normalize(refs or '')
+            hint_source = normalize(refs or '') + ' ' + text
             for category, pattern in REF_HINTS:
-                if re.search(pattern, refs):
+                if re.search(pattern, hint_source):
                     return category
+            # No content at all (only links, digits, rule codes or a few letters): nothing to review.
+            if len(re.findall('[а-яёa-z]', re.sub(r'<\w+>|\b\d+(?:[.,]\d+)*\b|\b(?:оп|op|gz|ппо)\b', ' ', text))) < 5 \
+                    or re.search(r'не кинул|дополнен\w* к жалоб', text):
+                return "complaint.invalid"
             return "complaint.other"
         return "report.offtopic"

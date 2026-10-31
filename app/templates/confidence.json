@@ -4,8 +4,8 @@
   "rows": 572,
   "table": {
     "heuristic|complaint.other": {
-      "confidence": 0.08,
-      "n": 111
+      "confidence": 0.151,
+      "n": 51
     },
     "heuristic|report.complaint": {
       "confidence": 0.81,
@@ -28,28 +28,24 @@
       "n": 8
     },
     "model|complaint.admin": {
-      "confidence": 0.419,
-      "n": 29
+      "confidence": 0.421,
+      "n": 17
     },
     "model|complaint.cheat": {
-      "confidence": 0.7,
-      "n": 8
-    },
-    "model|complaint.dm": {
-      "confidence": 0.63,
-      "n": 44
-    },
-    "model|complaint.insult": {
-      "confidence": 0.692,
-      "n": 24
-    },
-    "model|complaint.invalid": {
-      "confidence": 0.286,
-      "n": 5
-    },
-    "model|complaint.scam": {
       "confidence": 0.333,
       "n": 1
+    },
+    "model|complaint.dm": {
+      "confidence": 0.435,
+      "n": 21
+    },
+    "model|complaint.insult": {
+      "confidence": 0.6,
+      "n": 8
+    },
+    "model|complaint.invalid": {
+      "confidence": 0.333,
+      "n": 4
     },
     "model|report.account": {
       "confidence": 0.333,
@@ -72,24 +68,28 @@
       "n": 9
     },
     "rule|complaint.admin": {
-      "confidence": 0.871,
-      "n": 29
+      "confidence": 0.889,
+      "n": 43
     },
     "rule|complaint.cheat": {
-      "confidence": 0.737,
-      "n": 112
+      "confidence": 0.774,
+      "n": 113
     },
     "rule|complaint.dm": {
-      "confidence": 0.881,
-      "n": 82
+      "confidence": 0.885,
+      "n": 102
     },
     "rule|complaint.insult": {
-      "confidence": 0.94,
-      "n": 114
+      "confidence": 0.953,
+      "n": 125
     },
-    "rule|complaint.scam": {
+    "rule|complaint.invalid": {
       "confidence": 0.5,
       "n": 12
+    },
+    "rule|complaint.scam": {
+      "confidence": 0.562,
+      "n": 14
     }
   }
 }

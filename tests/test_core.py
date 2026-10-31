@@ -28,7 +28,8 @@ def test_rule_field_hint_only_applies_when_text_names_no_category():
     assert service.triage(ticket("<url>", rule_refs_raw="ДБ, УРП"))["category"] == "complaint.dm"
     assert service.triage(ticket("<url>", rule_refs_raw="5.2 оп"))["category"] == "complaint.cheat"
     assert service.triage(ticket("<url>", rule_refs_raw="2.1 ОП"))["category"] == "complaint.insult"
-    assert service.triage(ticket("<url>", rule_refs_raw="жб"))["category"] == "complaint.other"
+    assert service.triage(ticket("<url>", rule_refs_raw="жб"))["category"] == "complaint.invalid"
+    assert service.triage(ticket("случилась странная история", rule_refs_raw="жб"))["category"] == "complaint.other"
     assert service.triage(ticket("оск родни", rule_refs_raw="5.2"))["category"] == "complaint.insult"
 
 
@@ -182,3 +183,22 @@ def test_batch_keeps_input_order_and_reports_bad_line():
     assert output[0]["category"] == "report.question"
     assert output[1]["error"] == "invalid_input"
     assert output[2]["category"] == "complaint.insult"
+
+
+def test_appeals_police_abuse_empty_tickets_and_uz_words_are_routed():
+    service = TriageService(RuleIndex.from_data(RULES))
+    cases = {
+        "я не читер, прошу снять бан": "complaint.admin",
+        "за что мне бан на 31 день": "complaint.admin",
+        "опру": "complaint.admin",
+        "дб в зз": "complaint.dm",
+        "посадил в тюрьму и дал розыск": "complaint.dm",
+        "kishanlab ketdi": "complaint.dm",
+        "onadan sokdi": "complaint.insult",
+        "18+": "complaint.insult",
+        "он отнял у меня машину": "complaint.scam",
+        "чат": "complaint.invalid",
+        "<url> 123": "complaint.invalid",
+    }
+    for text, expected in cases.items():
+        assert service.triage(ticket(text))["category"] == expected, text
