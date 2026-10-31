@@ -13,7 +13,10 @@ TOPICS = {
     'complaint.rmt_ads': r'реклам|реальн.{0,15}деньг|продаж.{0,15}аккаунт',
 }
 
-INVALID_POINTS = {'1.2.3': r'описани', '1.3.4': r'общие формулировк'}
+FILING_POINTS = {  # complaint-filing rules (section "Правила жалоб"), matched by wording
+    'complaint.invalid': {'1.2.3': r'описани', '1.3.4': r'общие формулировк'},
+    'complaint.admin': {'1.3.1': r'скриншот наказани'},
+}
 
 
 def terms(text):
@@ -91,9 +94,8 @@ class RuleIndex:
         return ranked[:limit]
 
     def relevant_rule(self, text, category, ref):
-        if category == 'complaint.invalid':
-            # Complaint-filing rules (section "Правила жалоб"): points that name the defect, matched by wording.
-            pattern = INVALID_POINTS.get(ref)
+        if category in FILING_POINTS:
+            pattern = FILING_POINTS[category].get(ref)
             matches = [rule for rule in self.rules if pattern and rule.ref == ref and re.search(pattern, rule.text.casefold())]
             return matches[0] if len(matches) == 1 else None
         candidates = self.search(text, category, ref=ref, limit=len(self.rules))

@@ -44,6 +44,8 @@ def category_rule_ref(category: str, text: str) -> str | None:
     """General taxonomy point for a complaint category; none where no single point fits (dm, admin, other)."""
     if category == 'complaint.insult':
         return '2.1'
+    if category == 'complaint.admin':
+        return '1.3.1'
     if category == 'complaint.cheat':
         return '5.2'
     if category == 'complaint.scam':

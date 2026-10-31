@@ -265,3 +265,13 @@ def test_in_game_report_requests_and_accusations():
              "541 5.3 оп": "report.complaint", "помогите": "report.offtopic", "Добрый вечер": "report.offtopic"}
     for text, expected in cases.items():
         assert service.triage(ticket(text, kind="report"))["category"] == expected, text
+
+
+def test_admin_complaints_and_appeals_cite_the_filing_rule_about_punishment_screenshots():
+    rules = {"rules": RULES["rules"] + [{"id": 31, "category": "Правила жалоб", "points": [
+        {"ref": "1.3.1", "text": "Жалоба должна содержать: - скриншот наказания (если оно было выдано); - описание."}]}]}
+    service = TriageService(RuleIndex.from_data(rules))
+    result = service.triage(ticket("не согласен с наказанием, прошу снять бан", images_count=1))
+    assert result["category"] == "complaint.admin" and result["needs_human"]
+    assert [(c["section_id"], c["ref"]) for c in result["draft_reply"]["cited"]] == [(31, "1.3.1")]
+    assert "скриншот" in result["draft_reply"]["text"] and not any(r.startswith("safety_") for r in result["reasons"])
