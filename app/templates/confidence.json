@@ -4,8 +4,8 @@
   "rows": 572,
   "table": {
     "heuristic|complaint.other": {
-      "confidence": 0.167,
-      "n": 46
+      "confidence": 0.17,
+      "n": 45
     },
     "heuristic|report.complaint": {
       "confidence": 0.81,
@@ -44,8 +44,8 @@
       "n": 5
     },
     "model|complaint.invalid": {
-      "confidence": 0.333,
-      "n": 4
+      "confidence": 0.2,
+      "n": 3
     },
     "model|report.account": {
       "confidence": 0.333,
@@ -84,8 +84,8 @@
       "n": 137
     },
     "rule|complaint.invalid": {
-      "confidence": 0.5,
-      "n": 12
+      "confidence": 0.533,
+      "n": 13
     },
     "rule|complaint.scam": {
       "confidence": 0.647,

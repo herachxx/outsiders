@@ -256,3 +256,12 @@ def test_invalid_complaints_cite_complaint_filing_rules_only_when_they_apply():
     detailed = service.triage(ticket("случилась очень странная история с картой", images_count=1))
     assert detailed["category"] == "complaint.other" and detailed["draft_reply"]["cited"] == []
     assert not any(r.startswith("safety_") for r in empty["reasons"] + vague["reasons"])
+
+
+def test_in_game_report_requests_and_accusations():
+    service = TriageService(RuleIndex.from_data(RULES))
+    cases = {"снимите наручники": "report.help", "дастаньте тачку пж": "report.help",
+             "пристаёт забаньте пожалуйста": "report.complaint", "меня бьют возле больницы": "report.complaint",
+             "541 5.3 оп": "report.complaint", "помогите": "report.offtopic", "Добрый вечер": "report.offtopic"}
+    for text, expected in cases.items():
+        assert service.triage(ticket(text, kind="report"))["category"] == expected, text
