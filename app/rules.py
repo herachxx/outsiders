@@ -13,6 +13,8 @@ TOPICS = {
     'complaint.rmt_ads': r'реклам|реальн.{0,15}деньг|продаж.{0,15}аккаунт',
 }
 
+INVALID_POINTS = {'1.2.3': r'описани', '1.3.4': r'общие формулировк'}
+
 
 def terms(text):
     return {word[:5] for word in re.findall(r'[а-яa-z]{3,}', text.casefold().replace('ё', 'е'))}
@@ -89,6 +91,11 @@ class RuleIndex:
         return ranked[:limit]
 
     def relevant_rule(self, text, category, ref):
+        if category == 'complaint.invalid':
+            # Complaint-filing rules (section "Правила жалоб"): points that name the defect, matched by wording.
+            pattern = INVALID_POINTS.get(ref)
+            matches = [rule for rule in self.rules if pattern and rule.ref == ref and re.search(pattern, rule.text.casefold())]
+            return matches[0] if len(matches) == 1 else None
         candidates = self.search(text, category, ref=ref, limit=len(self.rules))
         # Lexical ranking cannot prove section scope; multiple matches require a human.
         return candidates[0][0] if len(candidates) == 1 else None

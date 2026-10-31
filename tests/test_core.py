@@ -240,3 +240,19 @@ def test_more_appeal_police_and_uz_forms():
     }
     for text, expected in cases.items():
         assert service.triage(ticket(text))["category"] == expected, text
+
+
+def test_invalid_complaints_cite_complaint_filing_rules_only_when_they_apply():
+    rules = {"rules": RULES["rules"] + [{"id": 31, "category": "Правила жалоб", "points": [
+        {"ref": "1.2.3", "text": "В описании жалобы отсутствует точное и логичное описание сути произошедшего."},
+        {"ref": "1.3.4", "text": "Жалобы, содержащие общие формулировки “разберитесь” без фактической части - отклоняются."}]}]}
+    service = TriageService(RuleIndex.from_data(rules))
+    empty = service.triage(ticket("<url>", images_count=1))
+    assert empty["category"] == "complaint.invalid"
+    assert [(c["section_id"], c["ref"]) for c in empty["draft_reply"]["cited"]] == [(31, "1.2.3")]
+    vague = service.triage(ticket("что это было??? разберитесь", images_count=1))
+    assert vague["category"] == "complaint.invalid"
+    assert [(c["section_id"], c["ref"]) for c in vague["draft_reply"]["cited"]] == [(31, "1.3.4")]
+    detailed = service.triage(ticket("случилась очень странная история с картой", images_count=1))
+    assert detailed["category"] == "complaint.other" and detailed["draft_reply"]["cited"] == []
+    assert not any(r.startswith("safety_") for r in empty["reasons"] + vague["reasons"])

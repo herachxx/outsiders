@@ -32,6 +32,11 @@ CATEGORY_PATTERNS = {
     ],
 }
 
+def is_contentless(text: str) -> bool:
+    """Only links, numbers, rule codes or a few letters: no description of what happened."""
+    return len(re.findall('[а-яёa-z]', re.sub(r'<\w+>|\b\d+(?:[.,]\d+)*\b|\b(?:оп|op|gz|ппо)\b', ' ', text))) < 5
+
+
 CITE_MIN_CONFIDENCE = 0.7  # a wrong category would make the cited point irrelevant
 
 
@@ -120,6 +125,14 @@ class TriageService:
             citation = rule.citation()
             if self.rules.validate_citation(citation):
                 cited.append(citation)
+        if not cited and category == 'complaint.invalid':
+            # Complaint-filing rules: no description (1.2.3) or only vague wording (1.3.4); empty tickets only.
+            invalid_ref = '1.3.4' if re.search(r'разберитесь|что это было|просто так (?:наказ|забан)', search_text) \
+                else ('1.2.3' if is_contentless(search_text) else None)
+            rule = self.rules.relevant_rule(search_text, category, invalid_ref) if invalid_ref else None
+            if rule is not None and self.rules.validate_citation(rule.citation()):
+                cited.append(rule.citation())
+                reasons.append("citation_from_category")
         if not cited and not safety_override and confidence >= CITE_MIN_CONFIDENCE:
             # Player named no usable point: use the taxonomy point for the category, still unique and relevant.
             default_ref = category_rule_ref(category, search_text)
@@ -184,8 +197,8 @@ class TriageService:
                 if re.search(pattern, hint_source):
                     return category
             # No content at all (only links, digits, rule codes or a few letters): nothing to review.
-            if len(re.findall('[а-яёa-z]', re.sub(r'<\w+>|\b\d+(?:[.,]\d+)*\b|\b(?:оп|op|gz|ппо)\b', ' ', text))) < 5 \
-                    or re.search(r'не кинул|дополнен\w* к жалоб', text):
+            if is_contentless(text) or re.search(r'не кинул|дополнен\w* к жалоб', text) \
+                    or (len(text) < 60 and re.search(r'разберитесь|что это было', text)):
                 return "complaint.invalid"
             return "complaint.other"
         return "report.offtopic"
