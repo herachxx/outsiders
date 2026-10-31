@@ -19,13 +19,13 @@ function renderQueue() {
   [...queue].sort((a,b)=>a.result.priority.localeCompare(b.result.priority)).forEach(item=>{
     const button=document.createElement('button');button.className='queue-item'+(item.id===current?.id?' active':'');
     button.textContent=item.result.priority.toUpperCase()+' · '+item.request.messages[0].text.slice(0,65);
-    const small=document.createElement('small');small.textContent=item.escalated?'Отмечено для старшего':item.result.category;button.append(small);
+    const small=document.createElement('small');small.textContent=item.sent?'Отправлено (отметка)':item.escalated?'Отмечено для старшего':item.result.category;button.append(small);
     button.onclick=()=>select(item);$('queue').append(button);
   });
 }
 function select(item) {
   if(current) current.edit=$('draft').value;
-  current=item;approvedText=null;$('copy').disabled=true;
+  current=item;approvedText=null;$('copy').disabled=true;$('send').disabled=true;
   $('empty').hidden=true;$('ticket').hidden=false;
   $('category').textContent=item.result.category;
   $('priority').textContent=item.result.priority.toUpperCase();$('priority').dataset.level=item.result.priority;
@@ -46,20 +46,38 @@ $('ticket-form').onsubmit=async event=>{
   try {const result=await api('/triage?format=internal',request);const item={id:crypto.randomUUID(),request,result,edit:result.draft_reply.text,escalated:false};queue.push(item);select(item);notify('Разбор готов. Проверьте черновик; он ещё не сохранён на устройстве.');}
   catch(error){notify(error.message);}finally{$('analyze').disabled=false;}
 };
-$('draft').oninput=()=>{approvedText=null;$('copy').disabled=true;$('draft-state').textContent='Текст изменён. Нужна повторная проверка.';if(current)current.edit=$('draft').value;};
+$('draft').oninput=()=>{approvedText=null;$('copy').disabled=true;$('send').disabled=true;$('draft-state').textContent='Текст изменён. Нужна повторная проверка.';if(current)current.edit=$('draft').value;};
 const restore=document.createElement('button');restore.textContent='Восстановить шаблон';restore.className='quiet';restore.onclick=()=>{if(!current)return;$('draft').value=current.result.draft_reply.text;$('draft').dispatchEvent(new Event('input'));};$('save').parentElement.append(restore);
 $('check').onclick=async()=>{
   if(!current||checking)return;checking=true;$('check').disabled=true;
   const item=current,text=$('draft').value;
   try {const result=await api('/draft/check',{request:item.request,draft:{...item.result.draft_reply,text}});
     if(current!==item||$('draft').value!==text)return;
-    approvedText=result.approved?text:null;$('copy').disabled=!result.approved;
+    approvedText=result.approved?text:null;$('copy').disabled=!result.approved;$('send').disabled=!result.approved;
     $('draft-state').textContent=result.approved?'Проверка пройдена. Можно скопировать текст.':'Правка требует проверки человеком. Сохраните её локально или восстановите исходный шаблон.';
   }catch(error){notify(error.message);}finally{checking=false;$('check').disabled=false;}
 };
 $('copy').onclick=async()=>{if(approvedText!==$('draft').value||!approvedText)return;try{await navigator.clipboard.writeText(approvedText);notify('Проверенный текст скопирован.');}catch{notify('Браузер запретил копирование. Проверьте разрешение буфера обмена.');}};
 $('save').onclick=()=>{if(!current)return;current.edit=$('draft').value;try{localStorage.setItem(key,JSON.stringify(queue));notify('Очередь и правка сохранены в браузере этого устройства.');}catch{notify('Не удалось сохранить: хранилище браузера недоступно или заполнено.');}};
 $('escalate').onclick=()=>{if(!current)return;current.escalated=true;select(current);notify('Отмечено для старшего локально. Для сохранения нажмите «Сохранить на устройстве».');};
+$('send').onclick=()=>{
+  if(!current||!approvedText||approvedText!==$('draft').value)return;
+  current.edit=$('draft').value;current.sent=new Date().toISOString();
+  try{localStorage.setItem(key,JSON.stringify(queue));}catch{}
+  renderQueue();notify('Отмечено как отправленное. Сообщение в игру не уходит: отправьте скопированный текст вручную. Правка сохранена как обучающий сигнал.');
+};
+function editSignals(){
+  if(current)current.edit=$('draft').value;
+  return queue.filter(i=>i.sent||i.escalated||i.edit!==i.result.draft_reply.text).map(i=>JSON.stringify({
+    kind:i.request.kind,text:i.request.messages[0].text,category:i.result.category,priority:i.result.priority,
+    original_draft:i.result.draft_reply.text,final_draft:i.edit,edited:i.edit!==i.result.draft_reply.text,
+    action:i.sent?'sent':i.escalated?'escalated':'edited'}));
+}
+$('export').onclick=()=>{
+  const lines=editSignals();if(!lines.length){notify('Нет правок, отправок и эскалаций для выгрузки.');return;}
+  const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([lines.join('\n')+'\n'],{type:'application/x-ndjson'}));
+  link.download='grand-edits.jsonl';link.click();URL.revokeObjectURL(link.href);notify('Выгружено записей: '+lines.length+'. Файл содержит тексты обращений; храните его вне Git.');
+};
 $('clear').onclick=()=>{if(!confirm('Удалить очередь и сохранённые правки на этом устройстве?'))return;try{localStorage.removeItem(key);}catch{notify('Браузер не разрешил очистку сохранённых данных.');return;}queue=[];current=null;approvedText=null;$('ticket').hidden=true;$('empty').hidden=false;renderQueue();notify('Данные устройства очищены.');};
 fetch('/health').then(r=>{$('health').textContent=r.ok?'Сервис готов · локальный режим':'Правила не загружены';}).catch(()=>{$('health').textContent='Сервис недоступен';});
 renderQueue();

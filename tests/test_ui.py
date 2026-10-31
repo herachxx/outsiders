@@ -31,3 +31,12 @@ def test_ui_is_available_but_processing_fails_without_rules():
     with TestClient(create_app(TriageService(RuleIndex([])))) as client:
         assert client.get('/').status_code == 200
         assert client.post('/triage', json={'kind': 'report', 'messages': [{'role': 'player', 'text': 'Помогите'}]}).status_code == 503
+
+
+def test_ui_has_send_and_export_controls_gated_by_the_server_check():
+    with TestClient(create_app(TriageService(RuleIndex.from_data(RULES)))) as client:
+        page, script = client.get('/').text, client.get('/ui/app.js').text
+        assert 'id="send"' in page and 'disabled>Отправить' in page and 'id="export"' in page
+        assert "$('send').disabled=!result.approved" in script      # enabled only after a passed check
+        assert "$('send').disabled=true" in script                    # any edit or new selection locks it again
+        assert 'grand-edits.jsonl' in script and "action:i.sent?'sent'" in script
