@@ -21,7 +21,8 @@
     "scam": "Опишите, что и когда передавалось и о чём вы договаривались.",
     "rmt_ads": "Укажите, где и когда игрок разместил рекламу или предложение.",
     "invalid": "Опишите суть нарушения, укажите пункт правил и время события.",
-    "review": "Обстоятельства и возможное нарушение должен проверить администратор."
+    "review": "Обстоятельства и возможное нарушение должен проверить администратор.",
+    "possible": "Возможное нарушение: пункт {ref} правил: «{quote}». Меру ответственности определяет администратор после проверки."
   },
   "kk": {
     "payment": "Төлемді тексеру үшін күнін, сомасын және операция нөмірін көрсетіңіз. Карта деректерін жасырып, түбіртекті тіркеңіз. Операцияны әкімші тексеруі керек.",
@@ -45,7 +46,8 @@
     "scam": "Не және қашан берілгенін, сіздер нені келіскеніңізді сипаттаңыз.",
     "rmt_ads": "Ойыншы жарнаманы немесе ұсынысты қайда және қашан орналастырғанын көрсетіңіз.",
     "invalid": "Бұзушылықтың мәнін сипаттап, ереже тармағын және оқиға уақытын көрсетіңіз.",
-    "review": "Мән-жайды және мүмкін бұзушылықты әкімші тексеруі керек."
+    "review": "Мән-жайды және мүмкін бұзушылықты әкімші тексеруі керек.",
+    "possible": "Мүмкін бұзушылық: ережелердің {ref} тармағы. Жауапкершілік шарасын әкімші тексеруден кейін анықтайды."
   },
   "uz": {
     "payment": "To‘lovni tekshirish uchun sana, summa va operatsiya raqamini ko‘rsating. Karta ma’lumotlarini yashirib, kvitansiyani ilova qiling. Operatsiyani administrator tekshirishi kerak.",
@@ -69,7 +71,8 @@
     "scam": "Nima va qachon berilganini hamda nimaga kelishganingizni tasvirlang.",
     "rmt_ads": "O‘yinchi reklama yoki taklifni qayerda va qachon joylashtirganini ko‘rsating.",
     "invalid": "Qoidabuzarlik mohiyatini tasvirlab, qoida bandi va voqea vaqtini ko‘rsating.",
-    "review": "Holat va mumkin bo‘lgan qoidabuzarlikni administrator tekshirishi kerak."
+    "review": "Holat va mumkin bo‘lgan qoidabuzarlikni administrator tekshirishi kerak.",
+    "possible": "Mumkin bo‘lgan qoidabuzarlik: qoidalarning {ref}-bandi. Javobgarlik choralarini administrator tekshiruvdan keyin belgilaydi."
   },
   "en": {
     "payment": "Provide the payment date, amount and transaction reference. Attach a receipt with card details hidden. An administrator needs to check the payment status.",
@@ -93,6 +96,7 @@
     "scam": "Describe what was handed over, when, and what you agreed on.",
     "rmt_ads": "Say where and when the player posted the advertisement or offer.",
     "invalid": "Describe the violation, the rule point and the time of the event.",
-    "review": "An administrator needs to review the circumstances and the possible violation."
+    "review": "An administrator needs to review the circumstances and the possible violation.",
+    "possible": "Possible violation: rule {ref}: “{quote}”. The administrator decides on any measures after review."
   }
 }

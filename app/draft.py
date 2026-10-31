@@ -19,6 +19,14 @@ def _text(request):
     return player_text(request.messages)
 
 
+def rule_quote(excerpt, limit=130):
+    """First clause of the rule text (before the sanction list), cut at a word boundary."""
+    clause = ' '.join(excerpt.split('|')[0].split()).rstrip(' .;:')
+    if len(clause) <= limit:
+        return clause
+    return clause[:limit].rsplit(' ', 1)[0].rstrip(' ,;:-') + '…'
+
+
 def draft_language(request, lang):
     """Reply in the detected language; for unknown text use the server language, else Russian (the main audience)."""
     if lang in templates():
@@ -52,6 +60,11 @@ def build_draft(request, category, lang, has_evidence, cited):
     region = (request.region or '').strip().casefold()
     if (not region or region in {'cis', 'uz', 'kz'}) and not extract_server(normalize(_text(request))):
         parts.append(phrases['server_missing'])
+    if cited and is_complaint:
+        first = cited[0]
+        quote = rule_quote(first['excerpt'])
+        # The rule text is Russian; a Kazakh or Uzbek draft names the point without mixing in a Russian quote.
+        parts.append(phrases['possible'].replace('{ref}', first['ref']).replace('{quote}', quote if actual_lang in ('ru', 'en') else ''))
     if cited:
         refs = ', '.join(dict.fromkeys(f"{c['section_id']}/{c['ref']}" for c in cited))
         parts.append(phrases['rules'].replace('{refs}', refs))

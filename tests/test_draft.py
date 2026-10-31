@@ -69,3 +69,19 @@ def test_each_complaint_type_has_its_own_question_and_review_note(lang):
     other = build_draft(request(), 'complaint.other', lang, False, [])['text']
     assert phrases['complaint'] in other
     assert not any(phrases[key] in other for key in SPECIFIC_COMPLAINTS)
+
+
+def test_possible_violation_sentence_quotes_the_rule_only_in_ru_and_en():
+    from app.draft import rule_quote
+    citation = {'section_id': 30, 'ref': '2.1', 'rules_hash': 'a' * 64,
+                'excerpt': 'Запрещено прямое оскорбление личности игрока. | Оскорбление игрока: MUTE - от 15 до 30 минут.'}
+    ru = build_draft(request(), 'complaint.insult', 'ru', True, [citation])['text']
+    assert 'Возможное нарушение: пункт 2.1 правил: «Запрещено прямое оскорбление личности игрока»' in ru
+    assert 'MUTE' not in ru                      # the sanction list is never quoted
+    kk = build_draft(request(), 'complaint.insult', 'kk', True, [citation])['text']
+    assert '2.1 тармағы' in kk and 'Запрещено' not in kk
+    uz = build_draft(request(), 'complaint.insult', 'uz', True, [citation])['text']
+    assert '2.1-bandi' in uz and 'Запрещено' not in uz
+    report = build_draft(request(), 'report.help', 'ru', False, [citation])['text']
+    assert 'Возможное нарушение' not in report
+    assert rule_quote('слово ' * 60).endswith('…') and len(rule_quote('слово ' * 60)) <= 131
