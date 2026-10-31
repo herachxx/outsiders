@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "smoothing": "laplace",
+  "rows": 572,
+  "table": {
+    "heuristic|complaint.other": {
+      "confidence": 0.08,
+      "n": 111
+    },
+    "heuristic|report.complaint": {
+      "confidence": 0.81,
+      "n": 19
+    },
+    "heuristic|report.help": {
+      "confidence": 0.9,
+      "n": 8
+    },
+    "heuristic|report.offtopic": {
+      "confidence": 0.68,
+      "n": 73
+    },
+    "heuristic|report.payment": {
+      "confidence": 0.333,
+      "n": 4
+    },
+    "heuristic|report.question": {
+      "confidence": 0.8,
+      "n": 8
+    },
+    "model|complaint.admin": {
+      "confidence": 0.419,
+      "n": 29
+    },
+    "model|complaint.cheat": {
+      "confidence": 0.7,
+      "n": 8
+    },
+    "model|complaint.dm": {
+      "confidence": 0.63,
+      "n": 44
+    },
+    "model|complaint.insult": {
+      "confidence": 0.692,
+      "n": 24
+    },
+    "model|complaint.invalid": {
+      "confidence": 0.286,
+      "n": 5
+    },
+    "model|complaint.scam": {
+      "confidence": 0.333,
+      "n": 1
+    },
+    "model|report.account": {
+      "confidence": 0.333,
+      "n": 1
+    },
+    "model|report.complaint": {
+      "confidence": 0.654,
+      "n": 24
+    },
+    "model|report.help": {
+      "confidence": 0.429,
+      "n": 12
+    },
+    "model|report.offtopic": {
+      "confidence": 0.632,
+      "n": 66
+    },
+    "model|report.question": {
+      "confidence": 0.364,
+      "n": 9
+    },
+    "rule|complaint.admin": {
+      "confidence": 0.871,
+      "n": 29
+    },
+    "rule|complaint.cheat": {
+      "confidence": 0.737,
+      "n": 112
+    },
+    "rule|complaint.dm": {
+      "confidence": 0.881,
+      "n": 82
+    },
+    "rule|complaint.insult": {
+      "confidence": 0.94,
+      "n": 114
+    },
+    "rule|complaint.scam": {
+      "confidence": 0.5,
+      "n": 12
+    }
+  }
+}

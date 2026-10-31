@@ -35,9 +35,9 @@ def evaluate(tasks, manifest, gold, seed=42, calibrate=False):
                     models[kind], _ = fit_calibrated(selected, seed)
                 else:
                     models[kind] = raw_models[kind]
-        service = TriageService(RuleIndex([]), CategoryClassifier(models, models if calibrate else ()))
-        raw_service = TriageService(RuleIndex([]), CategoryClassifier(raw_models))
-        baseline = TriageService(RuleIndex([]))
+        service = TriageService(RuleIndex([]), CategoryClassifier(models, models if calibrate else ()), empirical_confidence=False)
+        raw_service = TriageService(RuleIndex([]), CategoryClassifier(raw_models), empirical_confidence=False)
+        baseline = TriageService(RuleIndex([]), empirical_confidence=False)
         folds.append({'train_rows': len(train), 'valid_rows': len(valid),
                       'trained_kinds': sorted(models), 'reporter_overlap': 0})
         for i in valid:

@@ -8,6 +8,7 @@ from .priority import route, MANDATORY_HUMAN, multilingual_sensitive_category
 from .preprocess import before_admin, player_text as extract_player_text, normalize
 from .language import detect, language
 from .facts import extract_facts
+from .confidence import lookup
 from .draft import build_draft
 from .safety import check_draft
 
@@ -41,9 +42,10 @@ REF_HINTS = [
 
 
 class TriageService:
-    def __init__(self, rules: RuleIndex, classifier=None):
+    def __init__(self, rules: RuleIndex, classifier=None, empirical_confidence: bool = True):
         self.rules = rules
         self.classifier = classifier
+        self.empirical_confidence = empirical_confidence
 
     def triage(self, payload: dict | TriageRequest) -> dict:
         request = payload if isinstance(payload, TriageRequest) else TriageRequest.model_validate(payload)
@@ -71,6 +73,9 @@ class TriageService:
         confidence = 0.0
         if predicted and not safety_override and hasattr(self.classifier, 'confidence'):
             confidence = self.classifier.confidence(request.kind, search_text)
+        if not confidence and not safety_override and self.empirical_confidence:
+            source = 'model' if predicted else ('rule' if rule_decided else 'heuristic')
+            confidence = lookup(source, category)
         if self.classifier:
             reasons.append(('classifier_calibrated' if confidence else 'classifier_uncalibrated') if predicted else 'classifier_fallback')
         if safety_override:
