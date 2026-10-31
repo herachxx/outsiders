@@ -2,6 +2,15 @@
 // Interface localisation. Player message and server response remain in their original language.
 (() => {
 const dictionary = {
+'Помощь по игре.':['Ойын бойынша көмек.','O‘yin bo‘yicha yordam.'],'Понятный следующий шаг.':['Келесі қадам түсінікті.','Keyingi qadam aniq.'],
+'Опишите ситуацию. Помощник разберёт сообщение, а оператор проверит решение.':['Жағдайды сипаттаңыз. Көмекші хабарламаны талдайды, ал оператор шешімді тексереді.','Vaziyatni tasvirlang. Yordamchi xabarni tahlil qiladi, operator esa yechimni tekshiradi.'],
+'Помощник готов к обработке':['Көмекші өңдеуге дайын','Yordamchi ishlashga tayyor'],'Проверить связь':['Байланысты тексеру','Ulanishni tekshirish'],
+'Классификация по правилам · ответы по шаблонам. Решение подтверждает оператор.':['Ережелер бойынша жіктеу және жауап үлгілері. Шешімді оператор растайды.','Qoidalar asosida tasniflash va javob namunalari. Qarorni operator tasdiqlaydi.'],
+'Обученная модель · ответы по шаблонам. Решение подтверждает оператор.':['Үйретілген модель және жауап үлгілері. Шешімді оператор растайды.','O‘qitilgan model va javob namunalari. Qarorni operator tasdiqlaydi.'],
+'Ручной приём: правила не загружены':['Қолмен қабылдау: ережелер жүктелмеген','Qo‘lda qabul qilish: qoidalar yuklanmagan'],
+'Нет связи с помощником':['Көмекшімен байланыс жоқ','Yordamchi bilan aloqa yo‘q'],
+'Обращения сохраняются в очередь. Для автоматического разбора подключите правила и перезапустите сервис.':['Өтініштер кезекке сақталады. Автоматты талдау үшін ережелерді қосып, сервисті қайта іске қосыңыз.','Murojaatlar navbatga saqlanadi. Avtomatik tahlil uchun qoidalarni ulang va xizmatni qayta ishga tushiring.'],
+'Проверьте, что окно сервера открыто, и повторите проверку.':['Сервер терезесінің ашық екенін тексеріп, қайталап көріңіз.','Server oynasi ochiqligini tekshiring va qayta urinib ko‘ring.'],
 'Главная':['Басты бет','Bosh sahifa'],'Мои обращения':['Өтініштерім','Murojaatlarim'],'Обращения':['Өтініштер','Murojaatlar'],'База знаний':['Білім базасы','Bilimlar bazasi'],'Панель оператора':['Оператор панелі','Operator paneli'],'МЕНЮ':['МӘЗІР','MENYU'],'ДЛЯ КОМАНДЫ':['КОМАНДА ҮШІН','JAMOA UCHUN'],'ЦЕНТР ПОДДЕРЖКИ':['ҚОЛДАУ ОРТАЛЫҒЫ','YORDAM MARKAZI'],
 'ТВОЯ ИГРА.':['СЕНІҢ ОЙЫНЫҢ.','SENING O‘YINING.'],'НАША ПОДДЕРЖКА.':['БІЗДІҢ ҚОЛДАУЫМЫЗ.','BIZNING YORDAMIMIZ.'],'Расскажи, что случилось. Поможем найти решение.':['Не болғанын жаз. Шешім табуға көмектесеміз.','Nima bo‘lganini yozing. Yechim topishga yordam beramiz.'],'Задать вопрос':['Сұрақ қою','Savol berish'],
 'С чем нужна помощь?':['Қандай көмек қажет?','Qanday yordam kerak?'],'Выбери категорию — так мы быстрее поймём твою ситуацию.':['Санатты таңда — мәселені тезірек түсінеміз.','Toifani tanlang — muammoni tezroq tushunamiz.'],

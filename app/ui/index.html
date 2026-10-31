@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/ui/player.css">
   <script src="/ui/i18n.js" defer></script>
   <script src="/ui/player.js" defer></script>
-</head>
+<link rel="stylesheet" href="/ui/experience.css"><script src="/ui/service-status.js" defer></script></head>
 <body>
   <svg aria-hidden="true" class="icon-symbols" xmlns="http://www.w3.org/2000/svg">
     <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
@@ -49,17 +49,17 @@
     <div class="main-area">
       <header class="topbar">
         <div class="breadcrumbs"><span class="breadcrumb-muted">ЦЕНТР ПОДДЕРЖКИ</span><span class="slash">/</span><span id="breadcrumb-page">Главная</span></div>
-        <div class="topbar-right"><label class="language-picker" for="language" aria-label="Язык интерфейса"><svg><use href="#i-globe"/></svg><select id="language" aria-label="Язык интерфейса"><option value="ru">Русский</option><option value="kk">Қазақша</option><option value="uz">O‘zbekcha</option></select></label></div>
+        <div class="topbar-right"><a class="operator-link" href="/admin">Панель оператора</a><label class="language-picker" for="language" aria-label="Язык интерфейса"><svg><use href="#i-globe"/></svg><select id="language" aria-label="Язык интерфейса"><option value="ru">Русский</option><option value="kk">Қазақша</option><option value="uz">O‘zbekcha</option></select></label></div>
       </header>
 
-      <main class="main-content">
+      <main class="main-content"><section id="assistant-status" class="assistant-status" data-state="loading" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><div><strong id="assistant-status-title">Проверяем помощника…</strong><p id="assistant-status-detail">Проверяем доступность обработки на вашем сервере.</p></div><button id="assistant-status-refresh" type="button">Проверить связь</button></section>
         <div id="home-view">
           <section class="hero" aria-labelledby="hero-title">
 
             <div class="hero-content">
               
-              <h1 id="hero-title">ТВОЯ ИГРА.<br><span>НАША ПОДДЕРЖКА.</span></h1>
-              <p>Расскажи, что случилось. Поможем найти решение.</p>
+              <h1 id="hero-title">Помощь по игре.<br><span>Понятный следующий шаг.</span></h1>
+              <p>Опишите ситуацию. Помощник разберёт сообщение, а оператор проверит решение.</p>
               <a href="#compose-title" class="hero-button">Задать вопрос <svg><use href="#i-arrow"/></svg></a>
             </div>
             <img class="hero-art" src="/ui/hero-city.svg" alt="Стилизованный ночной город и спортивный автомобиль в атмосфере Grand Mobile">

@@ -11,12 +11,12 @@ def test_ui_assets_are_served_without_external_resources(monkeypatch):
     with TestClient(create_app(TriageService(RuleIndex.from_data(RULES)))) as client:
         page = client.get('/')
         assert page.status_code == 200
-        assert 'ТВОЯ ИГРА.' in page.text
+        assert 'Помощь по игре.' in page.text
         assert 'Платежи и покупки' in page.text
         assert client.get('/admin', follow_redirects=False).status_code == 303
         assert 'Вход в панель' in client.get('/admin/login').text
         assert client.post('/admin/api/login', json={'password':'test-password-secure-123'}).status_code == 200
-        assert 'Ответ и статус' in client.get('/admin').text
+        assert 'Ответ и решение' in client.get('/admin').text
         assert 'role="tablist"' in client.get('/admin').text
         assert 'toast-region' in client.get('/admin').text
         assert 'Ручной режим · нет правил' not in client.get('/admin').text

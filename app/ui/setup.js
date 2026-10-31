@@ -1,4 +1,9 @@
 "use strict";
+document.getElementById('show-password').addEventListener('click',event=>{
+ const show=document.getElementById('password').type==='password';
+ for(const id of ['password','confirm'])document.getElementById(id).type=show?'text':'password';
+ event.target.textContent=show?'Скрыть пароль':'Показать пароль';
+});
 document.getElementById('setup-form').addEventListener('submit', async event => {
   event.preventDefault();
   const password=document.getElementById('password').value;

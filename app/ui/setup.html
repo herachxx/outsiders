@@ -4,9 +4,9 @@
 <link rel="stylesheet" href="/ui/style.css"><link rel="stylesheet" href="/ui/login.css"><script src="/ui/setup.js" defer></script></head>
 <body><main class="login-screen"><div class="login-card">
 <div class="login-logo"><strong>G</strong> GRAND MOBILE <span class="login-product">/ Support</span></div>
-<h1>Первый запуск</h1><p>Создайте пароль для панели оператора. Это единственная настройка — она сохранится на вашем компьютере.</p>
+<h1>Первый запуск</h1><p>Создайте пароль для панели оператора. После настройки откроется рабочая панель с обращениями. Переключаться на страницу игрока и обратно можно по ссылкам в верхней части экрана.</p>
 <form id="setup-form"><label for="password">Пароль оператора</label><input type="password" id="password" minlength="12" autocomplete="new-password" required autofocus placeholder="Не менее 12 символов">
-<label for="confirm" style="margin-top:18px">Повторите пароль</label><input type="password" id="confirm" minlength="12" autocomplete="new-password" required>
-<button type="submit" id="submit">Создать пароль и продолжить</button><p class="login-error" role="alert" id="error"></p></form>
+<label for="confirm">Повторите пароль</label><input type="password" id="confirm" minlength="12" autocomplete="new-password" required>
+<button type="submit" id="submit">Создать пароль и продолжить</button><p class="login-error" role="alert" id="error"></p><button type="button" id="show-password" class="text-link">Показать пароль</button></form>
 <p class="setup-hint">Данные и пароль хранятся локально. Не удаляйте папку <code>data</code>, если хотите сохранить обращения и доступ.</p>
-</div></main></body></html>
+<a class="text-link" href="/">Сначала посмотреть страницу игрока</a></div></main></body></html>
