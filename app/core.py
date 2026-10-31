@@ -15,11 +15,11 @@ from .safety import check_draft
 CATEGORY_PATTERNS = {
     "complaint": [
         ("complaint.admin", r"админ|администратор|admin"),
-        ("complaint.cheat", r"чит|cheat|aimbot|аимбот|летает|сквозь стен|\bсофт|\bsoft\b"),
+        ("complaint.cheat", r"чит|cheat|aimbot|аимбот|летает|сквозь стен|\bсофт|\bsoft\b|\bфаст|скейт|кулак|прошивает|багоюз|багаюз"),
         ("complaint.scam", r"обман|мошен|вымог|скам"),
         ("complaint.rmt_ads", r"реальн.{0,8}деньг|прода.{0,10}аккаунт|реклам"),
-        ("complaint.insult", r"\bоск|\bosk|оскорб|обзыва|матер|унизи|расизм|национальност|токсич"),
-        ("complaint.dm", r"\bdm\b|\bдм\b|убил|убива|убийств|застрел|задави|урон|зел[её]н.{0,5}зон"),
+        ("complaint.insult", r"\bоск|\bosk|оскорб|обзыва|матер|унизи|расизм|национальност|токсич|род(?:ни|ных|ню|ным)|\bмам[ауыеой]\b|\bмать\b|упом|обозвал|послал|[hx]aqorat|\bock\b|порнограф"),
+        ("complaint.dm", r"\bdm\b|\bдм\b|убил|убива|убийств|застрел|задави|урон|зел[её]н.{0,5}зон|deathmatch|drive.?by|\bnrp\b|\borp\b|\bурп\b|\bпго\b|\bcop\b"),
     ],
     "report": [
         ("report.account", r"взлом|аккаунт|парол|не могу войти|пропал.{0,15}имуществ"),

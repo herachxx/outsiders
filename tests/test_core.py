@@ -32,6 +32,10 @@ def test_slang_abbreviations_are_classified_not_other():
         "пользуется софтом": "complaint.cheat",
         "работаю и меня просто так убивает игрок": "complaint.dm",
         "меня застрелил какой-то чел": "complaint.dm",
+        "упоминание родных в чате": "complaint.insult",
+        "deathmatch у банка": "complaint.dm",
+        "nrp на дороге": "complaint.dm",
+        "использует фаст ран": "complaint.cheat",
         "не согласен": "complaint.other",
         "костер": "complaint.other",
     }
