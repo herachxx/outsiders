@@ -41,6 +41,7 @@ outsiders/
 │   ├── __init__.py
 │   ├── inspect_data.py          диагностика данных, правил и taxonomy
 │   ├── sample_for_labeling.py   слепая выборка, manifest, пустые метки
+│   ├── label_cli.py             локальная пошаговая ручная разметка B1
 │   ├── train.py                 обучение из B1 gold, grouped CV только в train
 │   ├── benchmark.py             E2: локальный pipeline, p95, ошибки, параллельность
 │   ├── evaluate_drafts.py       D4: слепые пары A/B и агрегаты оценок
@@ -154,3 +155,5 @@ E3 технически готов: requirements-lock.txt, grand-predict entrypo
 E1: app/ui/index.html, style.css, app.js; POST /draft/check в api.py. Локальная очередь p0–p3, исходник/цитаты/reasons, редактор, localStorage по кнопке, локальная метка эскалации. tests/test_ui.py, docs/ui.md. 111 тестов, JS syntax, wheel assets проверены; браузерная проверка заблокирована средой. Следующий шаг — ручная проверка UI и завершение разметки/оценок; optional E1b (FAQ) ещё нет.
 
 HTTP-дополнение E2: `scripts/benchmark_http.py`, `tests/test_benchmark_http.py`. Локальный HTTP-прогон синтетики 1000 запросов × 1/5/20 потоков; p95 27,4/34,3/79,0 мс без ошибок. Подробности `docs/performance.md`; финальная конфигурация и реальные тексты не измерены.
+
+B1: `scripts/label_cli.py` даёт последовательную ручную разметку приватного пакета с сохранением после каждого решения; метки по-прежнему должны назначить люди. Запуск — `docs/annotation-guide.md`.
