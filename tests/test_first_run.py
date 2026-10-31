@@ -49,12 +49,12 @@ def test_fresh_setup_local_password_and_persistence(tmp_path, monkeypatch):
         assert client.get('/admin/api/session').status_code==200
         item=client.post('/support/tickets',json={'request':{'kind':'report','messages':[{'role':'player','text':'Не могу подключиться к серверу'}]}})
         assert item.status_code==201
-        assert item.json()['result']['needs_human']
-        assert client.get('/admin/api/tickets').json()['total']==1
+        assert item.json()['result']['meta']['mode']=='demo'
+        assert client.get('/admin/api/tickets').json()['total']==6
     with TestClient(create_app()) as restarted:
         assert restarted.get('/admin/api/tickets').status_code==401
         assert restarted.post('/admin/api/login',json={'password':PW}).status_code==200
-        assert restarted.get('/admin/api/tickets').json()['total']==1
+        assert restarted.get('/admin/api/tickets').json()['total']==6
 
 
 def test_reset_password_invalidates_session(tmp_path,monkeypatch):

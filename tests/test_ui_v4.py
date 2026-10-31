@@ -98,3 +98,22 @@ def test_operator_can_load_rules_from_the_panel(tmp_path, monkeypatch):
         assert ok.status_code == 200 and ok.json()['rules_loaded'] is True
         assert (tmp_path / 'rules.json').is_file()
         assert client.get('/api/status').json()['mode'] == 'rules'
+
+
+def test_demo_rules_are_labelled_and_launcher_falls_back_to_them(tmp_path, monkeypatch):
+    import json, os
+    from scripts.launch import prepare
+    demo = json.loads((BASE.parent / 'demo_rules.json').read_text(encoding='utf-8'))
+    assert all(section['category'].startswith('ДЕМО') for section in demo['rules'])
+    for key in ('GRAND_RULES_PATH', 'GRAND_DB_PATH', 'GRAND_UPLOAD_DIR', 'GRAND_OPERATOR_CONFIG'):
+        monkeypatch.delenv(key, raising=False)
+    prepare(root=tmp_path, password='correct horse battery staple')
+    assert os.environ['GRAND_RULES_PATH'].endswith('demo_rules.json')
+    assert (tmp_path / 'data' / 'support.sqlite3').is_file()
+    from app.core import TriageService
+    from app.rules import RuleIndex
+    from app.support.routes import describe_service
+    info = describe_service(TriageService(RuleIndex.from_data(demo)))
+    assert info['demo'] is True and info['mode'] == 'demo'
+    assert describe_service(TriageService(RuleIndex.from_data(RULES)))['demo'] is False
+    monkeypatch.undo()

@@ -55,7 +55,27 @@ def prepare(*, reset: bool = False, password: str | None = None, root: Path = RO
         rules = root / 'private' / 'rules.json'
     if not os.environ.get('GRAND_RULES_PATH') and rules.is_file():
         os.environ['GRAND_RULES_PATH'] = str(rules.resolve())
+    if not os.environ.get('GRAND_RULES_PATH'):
+        os.environ['GRAND_RULES_PATH'] = str((Path(__file__).resolve().parents[1] / 'app' / 'demo_rules.json'))
+        os.environ['GRAND_DEMO_SEED'] = '1'
+    seed_demo_if_new(Path(os.environ['GRAND_DB_PATH']))
     return read_config(config_path)
+
+
+def seed_demo_if_new(db: Path):
+    """First start without real rules: show five synthetic tickets so the panel is not empty."""
+    if os.environ.pop('GRAND_DEMO_SEED', '') != '1' or db.exists():
+        return
+    try:
+        sys.path.insert(0, str(ROOT))
+        from scripts.seed_demo import main as seed
+        argv, sys.argv = sys.argv, ['seed_demo', '--db', str(db)]
+        try:
+            seed()
+        finally:
+            sys.argv = argv
+    except Exception as exc:  # the demo data is a convenience, never a reason to stop
+        print('Демо-обращения не созданы:', exc)
 
 
 def main():
@@ -97,7 +117,7 @@ def main():
     print(f' Оператор:    http://127.0.0.1:{args.port}/admin')
     print(' Остановить:  Ctrl+C')
     if not os.environ.get('GRAND_RULES_PATH'):
-        print(' В этой публичной сборке нет приватных правил и весов модели.')
+        print(' Правила игры не найдены: работает демо на условных правилах. Настоящий rules.json загружается в панели оператора.')
     print(' Не публикуйте этот сервер в интернете без security review.\n', flush=True)
     if os.getenv('GRAND_OPEN_BROWSER') == '1':
         # Open only after the local server is responding.
@@ -106,7 +126,7 @@ def main():
         import time
         import webbrowser
         def _open_ready():
-            url = f'http://127.0.0.1:{args.port}/admin/setup' if config is None else f'http://127.0.0.1:{args.port}/'
+            url = f'http://127.0.0.1:{args.port}/admin/setup' if config is None else f'http://127.0.0.1:{args.port}/admin/login'
             for _ in range(80):
                 try:
                     with urllib.request.urlopen(url, timeout=0.3) as response:

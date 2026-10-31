@@ -71,9 +71,10 @@ def describe_service(service) -> dict:
     rules = getattr(service, 'rules', None)
     items = list(getattr(rules, 'rules', []) or [])
     model = getattr(service, 'classifier', None) is not None
-    return {'ok': True, 'rules_loaded': bool(items), 'rules_count': len(items),
+    demo = bool(items) and all(str(item.section).startswith('ДЕМО') for item in items)
+    return {'ok': True, 'rules_loaded': bool(items), 'rules_count': len(items), 'demo': demo,
             'rules_version': items[0].rules_hash[:8] if items else None,
-            'model_loaded': model, 'mode': 'manual' if not items else ('rules+model' if model else 'rules'),
+            'model_loaded': model, 'mode': 'manual' if not items else ('demo' if demo else ('rules+model' if model else 'rules')),
             'operator_configured': auth.configured()}
 
 
