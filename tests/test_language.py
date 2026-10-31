@@ -46,3 +46,11 @@ def test_kazakh_without_special_letters_and_ukrainian_markers():
 def test_kazakh_word_with_i_is_not_swallowed_by_the_ukrainian_branch():
     assert detect('сіз маған неге бан бердіңіз').lang == 'kk'
     assert detect('адмін розверни мене пожалуста').lang == 'und'
+
+
+def test_cp1251_look_alike_kazakh_letters_are_recognised_but_ukrainian_is_not_converted():
+    assert detect('Кґмек керек, ќалай жїктейміз').lang == 'kk'
+    assert detect('машинамды ќалай серверге жїктей аламын').lang == 'kk'
+    assert detect('сервеге кіріп шыќќаннан кейін кґлігімді таппай ќалдым').lang == 'kk'
+    ukrainian = detect('оск матері в голосової чат, їде зброї поліції')
+    assert ukrainian.lang == 'und' and ukrainian.uncertain

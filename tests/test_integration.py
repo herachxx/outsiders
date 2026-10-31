@@ -87,3 +87,29 @@ def test_batch_finds_rules_next_to_working_directory_or_runs_without(tmp_path):
     (tmp_path / 'rules.json').write_text(json.dumps(RULES), encoding='utf-8')
     run(tmp_path / 'b.jsonl')
     assert json.loads((tmp_path / 'b.jsonl').read_text(encoding='utf-8'))['draft_reply']['cited'] == ['2.1']
+
+
+def test_make_predict_style_json_array_in_and_out(tmp_path):
+    import json
+    import subprocess
+    import sys
+    tickets = [{'kind': 'report', 'messages': [{'role': 'player', 'text': 'где автошкола?'}]},
+               {'kind': 'complaint', 'messages': [{'role': 'player', 'text': 'оск родни'}]}, 'oops', {'kind': 'x'}]
+    source = tmp_path / 'tickets.json'
+    source.write_text(json.dumps(tickets, ensure_ascii=False), encoding='utf-8')
+    run = lambda *extra: subprocess.run([sys.executable, '-m', 'app.batch', '--input', str(source), '--output', str(tmp_path / 'pred.json'), *extra],
+                                        check=True, capture_output=True, text=True)
+    run()
+    result = json.loads((tmp_path / 'pred.json').read_text(encoding='utf-8'))
+    assert isinstance(result, list) and len(result) == 4
+    assert result[0]['category'] == 'report.question' and result[1]['category'] == 'complaint.insult'
+    assert result[2] == {'error': 'invalid_input'} and result[3] == {'error': 'invalid_input'}
+    (tmp_path / 'pred.json').unlink()
+    run('--output-format', 'jsonl')
+    lines = (tmp_path / 'pred.json').read_text(encoding='utf-8').splitlines()
+    assert len(lines) == 4 and json.loads(lines[0])['category'] == 'report.question'
+    # a file that is not parseable at all still yields one error row, not a crash
+    source.write_text('[{"kind": ', encoding='utf-8')
+    (tmp_path / 'pred.json').unlink()
+    run()
+    assert json.loads((tmp_path / 'pred.json').read_text(encoding='utf-8')) == [{'error': 'invalid_input'}]

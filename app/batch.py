@@ -112,6 +112,27 @@ def predict_lines(lines, service, format='submission', history=False):
         store.close()
 
 
+def is_json_array(path, opener) -> bool:
+    """True when the first non-blank character of the file is '[' (a JSON array of tickets)."""
+    with opener(path, "rt", encoding="utf-8") as stream:
+        for chunk in iter(lambda: stream.read(4096), ""):
+            stripped = chunk.lstrip("\ufeff \t\r\n")
+            if stripped:
+                return stripped[0] == "["
+    return False
+
+
+def array_to_lines(stream):
+    """Turn a JSON array of tickets into one JSON line per element, keeping order and count."""
+    try:
+        items = json.load(stream)
+    except json.JSONDecodeError:
+        return iter(["{"])   # one invalid_input row for a file that cannot be parsed at all
+    if not isinstance(items, list):
+        return iter([json.dumps(items)])
+    return iter(json.dumps(item, ensure_ascii=False) for item in items)
+
+
 def find_rules(explicit=None):
     """Explicit path (must exist), else GRAND_RULES_PATH, else a rules.json next to the working directory."""
     if explicit:
@@ -128,6 +149,10 @@ def main() -> None:
     parser.add_argument("--rules", help="rules.json; default: GRAND_RULES_PATH, then ./rules.json, ./data/rules.json, ./handout/rules.json")
     parser.add_argument('--model', help='Trusted local model.joblib from scripts.train (optional)')
     parser.add_argument('--format', choices=['submission', 'internal'], default='submission')
+    parser.add_argument('--input-format', choices=['auto', 'json', 'jsonl'], default='auto',
+                        help='auto: a file starting with [ is a JSON array of tickets, otherwise one ticket per line')
+    parser.add_argument('--output-format', choices=['auto', 'json', 'jsonl'], default='auto',
+                        help='auto: a JSON array in gives a JSON array out, lines in give lines out')
     parser.add_argument('--history', action=argparse.BooleanOptionalAction, default=None,
                         help='Chronological duplicate detection (buffers the input in memory); default: on for inputs under 200 MB')
     args = parser.parse_args()
@@ -139,10 +164,18 @@ def main() -> None:
     opener = gzip.open if args.input.endswith(".gz") else open
     out_opener = gzip.open if args.output.endswith(".gz") else open  # compressed output saves ~10x disk on large runs
     mode = "wt" if args.output.endswith(".gz") else "w"
-    with opener(args.input, "rt", encoding="utf-8") as source, out_opener(args.output, mode, encoding="utf-8") as target:
+    as_array = is_json_array(args.input, opener) if args.input_format == "auto" else args.input_format == "json"
+    as_array_out = as_array if args.output_format == "auto" else args.output_format == "json"
+    with opener(args.input, "rt", encoding="utf-8") as source:
+        lines = array_to_lines(source) if as_array else source
         use_history = args.history if args.history is not None else os.path.getsize(args.input) < HISTORY_AUTO_MAX_BYTES
-        for prediction in predict_lines(source, service, args.format, use_history):
-            target.write(json.dumps(prediction, ensure_ascii=False) + "\n")
+        with out_opener(args.output, mode, encoding="utf-8") as target:
+            if as_array_out:
+                results = list(predict_lines(lines, service, args.format, use_history))
+                target.write(json.dumps(results, ensure_ascii=False, indent=1) + "\n")
+            else:
+                for prediction in predict_lines(lines, service, args.format, use_history):
+                    target.write(json.dumps(prediction, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
