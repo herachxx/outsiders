@@ -4,8 +4,8 @@
   "rows": 572,
   "table": {
     "heuristic|complaint.other": {
-      "confidence": 0.151,
-      "n": 51
+      "confidence": 0.157,
+      "n": 49
     },
     "heuristic|report.complaint": {
       "confidence": 0.81,
@@ -40,8 +40,8 @@
       "n": 21
     },
     "model|complaint.insult": {
-      "confidence": 0.6,
-      "n": 8
+      "confidence": 0.5,
+      "n": 6
     },
     "model|complaint.invalid": {
       "confidence": 0.333,
@@ -72,24 +72,24 @@
       "n": 43
     },
     "rule|complaint.cheat": {
-      "confidence": 0.774,
-      "n": 113
+      "confidence": 0.87,
+      "n": 98
     },
     "rule|complaint.dm": {
-      "confidence": 0.885,
-      "n": 102
+      "confidence": 0.882,
+      "n": 108
     },
     "rule|complaint.insult": {
-      "confidence": 0.953,
-      "n": 125
+      "confidence": 0.964,
+      "n": 135
     },
     "rule|complaint.invalid": {
       "confidence": 0.5,
       "n": 12
     },
     "rule|complaint.scam": {
-      "confidence": 0.562,
-      "n": 14
+      "confidence": 0.647,
+      "n": 15
     }
   }
 }

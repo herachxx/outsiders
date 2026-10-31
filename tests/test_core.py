@@ -210,3 +210,18 @@ def test_short_in_game_report_forms():
              "связали без причины без рп": "report.complaint", "спавн": "report.offtopic"}
     for text, expected in cases.items():
         assert service.triage(ticket(text, kind="report"))["category"] == expected, text
+
+
+def test_first_mentioned_topic_wins_and_admin_wording_comes_first():
+    service = TriageService(RuleIndex.from_data(RULES))
+    cases = {
+        "оск родни и еще скам": "complaint.insult",
+        "скамил меня а потом оск": "complaint.scam",
+        "не согласен с наказанием, там оск": "complaint.admin",
+        "уход от рп на погоне": "complaint.dm",
+        "стрелял из тайзера": "complaint.dm",
+        "сбив аптекой": "complaint.cheat",
+        "ругается матом и угрожает": "complaint.insult",
+    }
+    for text, expected in cases.items():
+        assert service.triage(ticket(text))["category"] == expected, text

@@ -17,11 +17,11 @@ from .safety import check_draft
 CATEGORY_PATTERNS = {
     "complaint": [
         ("complaint.admin", r"админ|администратор|admin|не\s?согл|снят[ье]?.{0,12}(бан|варн|наказ|блок)|разбан|амнисти|пересмотр|перевыда|ошибк\w* бана|\bопру|за что.{0,12}(?:бан|варн|мут|наказ)|(?:бан|варн|мут|наказани\w*).{0,25}(?:не за что|незачто|без причин|несправедлив|необоснован)|не\s?нарушал|(?:у меня|я).{0,15}(?:нет|не).{0,12}(?:чит|софт)|noroziman|xato berilgan|jazo.{0,25}(?:olib|bekor|qanday)|ban (?:olib|yechil)"),
-        ("complaint.cheat", r"чит|cheat|aimbot|аимбот|летает|сквозь стен|\bсофт|\bsoft\b|\bфаст|скейт|кулак|прошивает|багоюз|багаюз"),
+        ("complaint.cheat", r"чит|cheat|aimbot|аимбот|летает|сквозь стен|\bсофт|\bsoft\b|\bфаст|скейт|кулак|прошивает|багоюз|багаюз|\bсбив|\bсб\b|скорострел|сборк|\bгг\b|\bпил[аыу]\b|дигл"),
         ("complaint.scam", r"обман|мошен|вымог|скам|краж|отнял|развод|ограбил"),
         ("complaint.rmt_ads", r"реальн.{0,8}деньг|прода.{0,10}аккаунт|реклам"),
-        ("complaint.insult", r"\bоск|\bosk|оскорб|обзыва|матер|унизи|расизм|национальност|токсич|род(?:ни|ных|ню|ным)|\bмам[ауыеой]\b|\bмать\b|упом|обозвал|послал|[hx]aqorat|\bock\b|порнограф|18\+|\bsok(?:di|ib|vot|kan)|onadan|otadan|tuxmat|хуй|хуе|пизд|ебан|шлюх|уебищ|долбаеб|\bсука\b|мразь"),
-        ("complaint.dm", r"\bdm\b|\bдм\b|убил|убива|убийств|застрел|задави|задов|посад\w*.{0,25}(без причин|просто так|не за что)|урон|зел[её]н.{0,5}зон|\bдб\b|\bdb\b|\bsk\b|\bск\b|\btk\b|\bтк\b|тим ?килл|нон ?рп|\bnon ?rp|беспредел|розыск|наручник|задержал|арестовал|kishan|\botib|uldir|oldir|o.ldir|deathmatch|drive.?by|\bnrp\b|\borp\b|\bурп\b|\bпго\b|\bcop\b"),
+        ("complaint.insult", r"\bоск|\bosk|оскорб|обзыва|матер|унизи|расизм|национальност|токсич|род(?:ни|ных|ню|ным)|\bмам[ауыеой]\b|\bмать\b|упом|обозвал|послал|[hx]aqorat|\bock\b|порнограф|18\+|\bsok(?:di|ib|vot|kan)|onadan|otadan|tuxmat|хуй|хуе|пизд|ебан|шлюх|уебищ|долбаеб|\bсука\b|мразь|\bмат(?:ы|ом|ов)?\b|неадекват|\bугроз|орск|гандон|родител|sokind|haromi|сексуальн"),
+        ("complaint.dm", r"\bdm\b|\bдм\b|убил|убива|убийств|застрел|задави|задов|посад\w*.{0,25}(без причин|просто так|не за что)|урон|зел[её]н.{0,5}зон|\bдб\b|\bdb\b|\bsk\b|\bск\b|\btk\b|\bтк\b|тим ?килл|нон ?рп|\bnon ?rp|беспредел|розыск|наручник|задержал|арестовал|kishan|\botib|uldir|oldir|o.ldir|уход\w*.{0,6}(?:от )?(?:рп|погон|смерт)|помех\w* рп|тайзер|шокер|стрел[яь]|урпшит|deathmatch|drive.?by|\bnrp\b|\borp\b|\bурп\b|\bпго\b|\bcop\b"),
     ],
     "report": [
         ("report.account", r"взлом|аккаунт|парол|не могу войти|пропал.{0,15}имуществ"),
@@ -161,9 +161,22 @@ class TriageService:
             sensitive = multilingual_sensitive_category(text)
             if sensitive:
                 return sensitive
-        for category, pattern in CATEGORY_PATTERNS[kind]:
-            if re.search(pattern, text):
-                return category
+        if kind == 'complaint':
+            # Admin/appeal wording decides first; otherwise the topic mentioned first in the text wins.
+            admin = CATEGORY_PATTERNS['complaint'][0]
+            if re.search(admin[1], text):
+                return admin[0]
+            best = None
+            for category, pattern in CATEGORY_PATTERNS['complaint'][1:]:
+                match = re.search(pattern, text)
+                if match and (best is None or match.start() < best[0]):
+                    best = (match.start(), category)
+            if best:
+                return best[1]
+        else:
+            for category, pattern in CATEGORY_PATTERNS[kind]:
+                if re.search(pattern, text):
+                    return category
         if kind == 'complaint':
             # The player's own rule field is only a hint, used when the text names no category.
             hint_source = normalize(refs or '') + ' ' + text
