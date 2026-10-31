@@ -18,8 +18,10 @@ def build_draft(request, category, lang, has_evidence, cited):
         key = 'complaint'
     else:
         key = category.removeprefix('report.')
-    parts = [phrases.get(key, phrases['other'])]
-    if key in ('complaint', 'admin'):
+    is_complaint = key in ('complaint', 'admin')
+    parts = [phrases['greeting_complaint' if is_complaint else 'greeting_report'],
+             phrases.get(key, phrases['other'])]
+    if is_complaint:
         parts.append(phrases['evidence_present' if has_evidence else 'evidence_missing'])
         if not request.reported_nick and not request.reported_hash:
             parts.append(phrases['target_missing'])
@@ -31,4 +33,6 @@ def build_draft(request, category, lang, has_evidence, cited):
     if cited:
         refs = ', '.join(dict.fromkeys(f"{c['section_id']}/{c['ref']}" for c in cited))
         parts.append(phrases['rules'].replace('{refs}', refs))
+    if is_complaint:
+        parts.append(phrases['closing'])
     return {'lang': actual_lang, 'text': ' '.join(parts), 'cited': cited}

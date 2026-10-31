@@ -8,10 +8,13 @@
     "complaint": "Опишите действия игрока и укажите время события. Обстоятельства и возможное нарушение должен проверить администратор.",
     "other": "Уточните, что произошло и какая помощь нужна.",
     "evidence_present": "Содержимое приложенных материалов ещё не проверено.",
-    "evidence_missing": "Если есть запись или снимки события, приложите их для проверки.",
+    "evidence_missing": "Для рассмотрения жалобы приложите видеозапись (фрапс) события.",
     "target_missing": "Укажите никнейм или игровой ID участника события.",
     "server_missing": "Укажите сервер, на котором возникла ситуация.",
-    "rules": "Пункты правил ({refs}) приведены для проверки применимости администратором."
+    "rules": "Пункты правил ({refs}) приведены для проверки применимости администратором.",
+    "greeting_complaint": "Здравствуйте! Благодарим за обращение.",
+    "greeting_report": "Здравствуйте!",
+    "closing": "С уважением, администрация Grand Mobile."
   },
   "kk": {
     "payment": "Төлемді тексеру үшін күнін, сомасын және операция нөмірін көрсетіңіз. Карта деректерін жасырып, түбіртекті тіркеңіз. Операцияны әкімші тексеруі керек.",
@@ -22,10 +25,13 @@
     "complaint": "Ойыншының әрекеттерін сипаттап, оқиға уақытын көрсетіңіз. Жағдайды әкімші тексеруі керек.",
     "other": "Не болғанын және қандай көмек керегін нақтылаңыз.",
     "evidence_present": "Тіркелген материалдардың мазмұны әлі тексерілген жоқ.",
-    "evidence_missing": "Оқиғаның бейнежазбасы немесе скриншоттары болса, тексеру үшін тіркеңіз.",
+    "evidence_missing": "Шағымды қарау үшін оқиғаның бейнежазбасын (фрапс) тіркеңіз.",
     "target_missing": "Оқиғаға қатысушының лақап атын немесе ойын ID нөмірін көрсетіңіз.",
     "server_missing": "Жағдай туындаған серверді көрсетіңіз.",
-    "rules": "Ереже тармақтарының ({refs}) қолданылуын әкімші тексеруі керек."
+    "rules": "Ереже тармақтарының ({refs}) қолданылуын әкімші тексеруі керек.",
+    "greeting_complaint": "Сәлеметсіз бе! Өтінішіңіз үшін рақмет.",
+    "greeting_report": "Сәлеметсіз бе!",
+    "closing": "Құрметпен, Grand Mobile әкімшілігі."
   },
   "uz": {
     "payment": "To‘lovni tekshirish uchun sana, summa va operatsiya raqamini ko‘rsating. Karta ma’lumotlarini yashirib, kvitansiyani ilova qiling. Operatsiyani administrator tekshirishi kerak.",
@@ -36,10 +42,13 @@
     "complaint": "O‘yinchi harakatlarini tasvirlab, voqea vaqtini ko‘rsating. Vaziyatni administrator tekshirishi kerak.",
     "other": "Nima bo‘lganini va qanday yordam kerakligini aniqlashtiring.",
     "evidence_present": "Ilova qilingan materiallarning mazmuni hali tekshirilmagan.",
-    "evidence_missing": "Voqea yozuvi yoki skrinshotlari bo‘lsa, tekshirish uchun ilova qiling.",
+    "evidence_missing": "Shikoyatni ko‘rib chiqish uchun voqeaning video yozuvini (fraps) ilova qiling.",
     "target_missing": "Voqea ishtirokchisining taxallusi yoki o‘yin ID raqamini ko‘rsating.",
     "server_missing": "Vaziyat yuz bergan serverni ko‘rsating.",
-    "rules": "Qoida bandlarining ({refs}) qo‘llanishini administrator tekshirishi kerak."
+    "rules": "Qoida bandlarining ({refs}) qo‘llanishini administrator tekshirishi kerak.",
+    "greeting_complaint": "Assalomu alaykum! Murojaatingiz uchun rahmat.",
+    "greeting_report": "Assalomu alaykum!",
+    "closing": "Hurmat bilan, Grand Mobile ma’muriyati."
   },
   "en": {
     "payment": "Provide the payment date, amount and transaction reference. Attach a receipt with card details hidden. An administrator needs to check the payment status.",
@@ -50,9 +59,12 @@
     "complaint": "Describe the player's actions and the time of the event. An administrator needs to review the circumstances.",
     "other": "Please clarify what happened and what help you need.",
     "evidence_present": "The contents of the attached materials have not been verified.",
-    "evidence_missing": "If available, attach a recording or screenshots of the event for review.",
+    "evidence_missing": "Please attach a video recording (fraps) of the event so the complaint can be reviewed.",
     "target_missing": "Provide the participant's nickname or in-game ID.",
     "server_missing": "Specify the server where this happened.",
-    "rules": "An administrator needs to check whether rule references ({refs}) apply."
+    "rules": "An administrator needs to check whether rule references ({refs}) apply.",
+    "greeting_complaint": "Hello! Thank you for your report.",
+    "greeting_report": "Hello!",
+    "closing": "Kind regards, Grand Mobile administration."
   }
 }

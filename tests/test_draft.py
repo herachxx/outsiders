@@ -17,6 +17,17 @@ def test_templates_cover_languages_and_do_not_echo_untrusted_input(lang, categor
     assert result['cited'] == []
 
 
+@pytest.mark.parametrize('lang', ['ru', 'kk', 'uz', 'en'])
+def test_complaint_drafts_have_greeting_and_signature_but_reports_are_short(lang):
+    from app.draft import templates
+    phrases = templates()[lang]
+    complaint = build_draft(request(), 'complaint.cheat', lang, False, [])['text']
+    report = build_draft(request(), 'report.help', lang, False, [])['text']
+    assert complaint.startswith(phrases['greeting_complaint']) and complaint.endswith(phrases['closing'])
+    assert report.startswith(phrases['greeting_report']) and phrases['closing'] not in report
+    assert phrases['evidence_missing'] in complaint
+
+
 def test_missing_fields_and_evidence_change_draft():
     empty = build_draft(request(), 'complaint.cheat', 'ru', False, [])['text']
     supplied = build_draft(request(region='server', reported_nick='player'), 'complaint.cheat', 'ru', True, [])['text']
