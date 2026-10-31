@@ -32,11 +32,11 @@ CATEGORY_PATTERNS = {
 
 # Hints from the player-filled rule field; taxonomy rule refs, not verified claims.
 REF_HINTS = [
-    ("complaint.dm", r"\bgz\b|\bdm\b|\bдм\b|\bdb\b|\bдб\b|\bsk\b|\bск\b|\btk\b|\bтк\b|5\.[34]|\bnrp\b|\bнрп\b|\bурп\b"),
-    ("complaint.cheat", r"5\.2|чит|софт|\bsoft\b|\bсб\b"),
-    ("complaint.scam", r"4\.[12]|скам|\bscam\b"),
-    ("complaint.rmt_ads", r"2\.3|4\.4"),
-    ("complaint.insult", r"\b2\.[146]\b|2\.1.?оп|\bоск|\bosk"),
+    ("complaint.dm", r"\bgz\b|\bdm\b|\bдм\b|\bdb\b|\bдб\b|\bsk\b|\bск\b|\btk\b|\bтк\b|(?<![\w.])5\.[34](?![\d.])|\bnrp\b|\bнрп\b|\bурп\b"),
+    ("complaint.cheat", r"(?<![\w.])5\.2(?![\d.])|чит|софт|\bsoft\b|\bсб\b"),
+    ("complaint.scam", r"(?<![\w.])4\.[12](?![\d.])|скам|\bscam\b"),
+    ("complaint.rmt_ads", r"(?<![\w.])(?:2\.3|4\.4)(?![\d.])"),
+    ("complaint.insult", r"(?<![\w.])2\.[146](?![\d.])|\bоск|\bosk"),
 ]
 
 
