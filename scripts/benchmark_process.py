@@ -82,7 +82,7 @@ def main():
                            capture_output=True, text=True)
     elapsed = time.perf_counter() - started
     if child.returncode:
-        parser.exit(1, 'Benchmark worker failed; partial predictions may remain. Report not created.\n')
+        parser.exit(1, 'Benchmark worker failed; partial predictions may remain. Report not created.\n' + child.stderr[-2000:])
     report = json.loads(child.stdout)
     report.update({'elapsed_s': elapsed, 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
                    'python': platform.python_version(), 'platform': platform.platform(),
