@@ -225,3 +225,18 @@ def test_first_mentioned_topic_wins_and_admin_wording_comes_first():
     }
     for text, expected in cases.items():
         assert service.triage(ticket(text))["category"] == expected, text
+
+
+def test_more_appeal_police_and_uz_forms():
+    service = TriageService(RuleIndex.from_data(RULES))
+    cases = {
+        "за что варн": "complaint.admin",
+        "без причины дали предупреждение": "complaint.admin",
+        "rep farm qilyapdi": "complaint.admin",
+        "взяли под стражу без причины": "complaint.dm",
+        "в зз завязал руки": "complaint.dm",
+        "mani soʻkdi": "complaint.insult",
+        "домогательство": "complaint.insult",
+    }
+    for text, expected in cases.items():
+        assert service.triage(ticket(text))["category"] == expected, text
