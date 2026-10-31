@@ -25,10 +25,6 @@ const P_ORDER=['p0','p1','p2','p3'];
 let queue=[],current=null,csrf='',activeFilter='all',query='',approvedText=null,loading=false,totalCount=0,activeTab='summary';
 const PAGE_SIZE=60;
 function label(code){return labels[code]||code||'Обращение';}
-function reviewMessage(reasons){
- if(reasons.includes('safety_unapproved_draft'))return 'Правка сохранена, но автоматическая проверка допускает только утверждённый шаблон. Восстановите исходный ответ или передайте обращение на проверку.';
- return 'Ответ требует ручной проверки: не удалось подтвердить текст или пункты правил. Передайте обращение на проверку.';
-}
 function notify(value,type='success'){
  if(!value)return;
  const region=$('toast-region');const card=document.createElement('div');card.className='toast '+(type==='error'?'error':'success');card.setAttribute('role',type==='error'?'alert':'status');
@@ -63,8 +59,7 @@ function renderQueue(){
  const head=text('div','','queue-top');head.append(text('span','#'+item.id,'queue-id'),text('span',when(item.created_at),'queue-time'));button.append(head);
  button.append(text('span',label(item.result.category),'queue-name'));
  const bottom=text('div','','queue-bottom');bottom.append(text('span',`${item.request.region||'Сервер не указан'} · ${statuses[item.status]||'—'}`,'queue-info'));
- button.append(text('span',(item.request.messages||[]).filter(m=>m.role==='player').map(m=>m.text).join(' '),'queue-preview'));
- bottom.append(text('span',({p0:'Критично',p1:'Срочно',p2:'Обычный',p3:'Низкий'})[item.result.priority]||'Обычный','tag '+(item.result.priority||'p2')));button.append(bottom);
+ bottom.append(text('span',(item.result.priority||'p2').toUpperCase(),'tag '+(item.result.priority||'p2')));button.append(bottom);
  button.addEventListener('click',()=>{if(current&&$('draft').value!==current.draft_text){notify('Сохраните изменения черновика перед переходом.','error');switchTab('reply');return;}const different=current?.id!==item.id;select(item);if(different)switchTab('summary');document.querySelector('.app-layout').classList.add('show-case');});list.append(button);
  }
  if(!list.children.length)list.append(text('p','Нет обращений по выбранным условиям.','list-empty'));
@@ -77,7 +72,6 @@ async function reload(keep=true,append=false){
  if(query)params.set('q',query);
  if(activeFilter==='human')params.set('human','true');
  if(activeFilter==='p0')params.set('priority','urgent');
- if($('queue-status').value)params.set('status',$('queue-status').value);
  const data=await http('/admin/api/tickets?'+params.toString());
  totalCount=data.total;queue=append?queue.concat(data.items):data.items;
  if(selected)current=queue.find(x=>x.id===selected)||queue[0]||null;
@@ -110,9 +104,6 @@ async function loadAudit(){
 }
 function select(item){
  current=item;approvedText=item.draft_approved?item.draft_text:null;
- const summary=$('analysis-summary');summary.replaceChildren();
- summary.append(text('strong','Помощник выполнил разбор'),text('span','Категория определена'),text('span','Приоритет: '+({p0:'критичный',p1:'срочный',p2:'обычный',p3:'низкий'})[item.result.priority]),text('span',item.result.draft_reply?.cited?.length?'Найдены пункты правил':'Без подходящей цитаты'));
- if((item.result.reasons||[]).includes('rules_unavailable'))summary.replaceChildren(text('strong','Автоматический разбор недоступен. Обращение сохранено для ручной проверки.'));
  $('empty').hidden=true;$('ticket').hidden=false;$('decision-empty').hidden=true;$('decision-content').hidden=false;
  const title=label(item.result.category);$('ticket-id').textContent=item.id;$('case-title').textContent=title;
  $('case-subtitle').textContent=`${statuses[item.status]||'—'} · ${when(item.created_at)}`;
@@ -134,9 +125,6 @@ function select(item){
  $('human-details').textContent=item.result.needs_human?'Решение принимает оператор':'Проверьте черновик перед использованием';
  $('decision-category').textContent=title;$('decision-priority').textContent=(item.result.priority||'p2').toUpperCase();
  $('ticket-status').value=item.status;$('status-note').value='';
- const transitions={new:['in_review','needs_info','escalated'],in_review:['needs_info','escalated','resolved'],needs_info:['in_review','escalated'],escalated:['in_review','resolved'],resolved:['closed','in_review'],closed:['in_review']};
- for(const option of $('ticket-status').options)option.disabled=option.value!==item.status&&!(transitions[item.status]||[]).includes(option.value);
- $('apply-status').disabled=true;$('escalate').disabled=!(transitions[item.status]||[]).includes('escalated');
  $('draft').value=item.draft_text||'';$('draft').disabled=['resolved','closed'].includes(item.status);
  $('copy').disabled=!approvedText;$('check').disabled=['resolved','closed'].includes(item.status);$('send').disabled=['resolved','closed'].includes(item.status);
  $('save').disabled=['resolved','closed'].includes(item.status);
@@ -144,7 +132,7 @@ function select(item){
  $('draft-length').textContent=$('draft').value.length+' символов';
  $('attachment-tab-count').textContent=(item.request.images_count||0)?'('+item.request.images_count+')':'';
  $('facts-section').hidden=!facts.length;
- switchTab(activeTab);renderQueue();void loadAttachments(item.id);if($('audit-details').open)void loadAudit();
+ renderQueue();void loadAttachments(item.id);if($('audit-details').open)void loadAudit();
 }
 function changed(){approvedText=null;$('copy').disabled=true;$('draft-state').textContent='Есть несохранённые изменения';
  $('draft-length').textContent=$('draft').value.length+' символов';}
@@ -153,26 +141,23 @@ async function saveDraft(){if(!current)throw Error('Выберите обращ�
  const ticket=await http(`/admin/api/tickets/${encodeURIComponent(current.id)}/draft`,{method:'PUT',body:{version:current.version,text:$('draft').value}});
  current=ticket;queue=queue.map(t=>t.id===ticket.id?ticket:t);select(ticket);return ticket;
 }
-async function action(task){if(loading)return;loading=true;document.body.setAttribute('aria-busy','true');try{await task();}catch(error){notify(error.message,'error');}finally{loading=false;document.body.removeAttribute('aria-busy');}}
+async function action(task){if(loading)return;loading=true;try{await task();}catch(error){notify(error.message);if(/измен|changed|reload/i.test(error.message))await reload();}finally{loading=false;}}
 $('save').addEventListener('click',()=>action(async()=>{await saveDraft();notify('Черновик сохранён на сервере.');}));
 $('check').addEventListener('click',()=>action(async()=>{
  const item=await saveDraft();const checked=await http(`/admin/api/tickets/${encodeURIComponent(item.id)}/verify`,{method:'POST',body:{version:item.version}});
  if(checked.approved){queue=queue.map(t=>t.id===item.id?checked.ticket:t);select(checked.ticket);notify('Черновик проверен. Можно скопировать ответ.');}
- else{approvedText=null;$('copy').disabled=true;$('draft-state').textContent='Требуется ручная проверка';notify(reviewMessage(checked.reasons),'error');}
+ else{approvedText=null;$('copy').disabled=true;$('draft-state').textContent='Не прошёл проверку';notify('Не пройдена проверка: '+checked.reasons.join(', '));}
 }));
 $('send').addEventListener('click',()=>action(async()=>{
  // "Отправить": verify the draft, then record the ticket as answered. Nothing is sent to the game.
  const item=await saveDraft();const base=`/admin/api/tickets/${encodeURIComponent(item.id)}`;
  const checked=await http(base+'/verify',{method:'POST',body:{version:item.version}});
- if(!checked.approved){approvedText=null;$('draft-state').textContent='Требуется ручная проверка';notify(reviewMessage(checked.reasons),'error');return;}
+ if(!checked.approved){approvedText=null;$('draft-state').textContent='Не прошёл проверку';notify('Не отправлено, не пройдена проверка: '+checked.reasons.join(', '));return;}
  let ticket=checked.ticket;
- queue=queue.map(t=>t.id===ticket.id?ticket:t);select(ticket);
- await navigator.clipboard.writeText(ticket.draft_text);
- if(!confirm('Ответ скопирован. Отправьте его игроку в рабочем канале.\n\nВы уже отправили ответ и хотите отметить обращение решённым?')){notify('Ответ скопирован. Обращение остаётся открытым.');return;}
  if(['new','needs_info'].includes(ticket.status))ticket=await http(base+'/status',{method:'POST',body:{version:ticket.version,status:'in_review',note:''}});
  ticket=await http(base+'/status',{method:'POST',body:{version:ticket.version,status:'resolved',note:'Ответ проверен и отмечен как отправленный оператором'}});
  queue=queue.map(t=>t.id===ticket.id?ticket:t);select(ticket);await loadAudit();
- notify('Ответ скопирован, обращение отмечено решённым. Автоматической отправки в игру нет.');
+ notify('Отмечено как отправленное. В Grand Mobile ничего не отправлено: скопируйте текст и отправьте его вручную.');
 }));
 $('copy').addEventListener('click',()=>action(async()=>{
  if(!current?.draft_approved||current.draft_text!==$('draft').value)throw Error('Сначала проверьте черновик');
@@ -186,9 +171,6 @@ async function setStatus(status){
  queue=queue.map(t=>t.id===item.id?item:t);select(item);await loadAudit();notify('Статус обращения обновлён и записан в журнал.');
 }
 $('apply-status').addEventListener('click',()=>action(()=>setStatus($('ticket-status').value)));
-$('ticket-status').addEventListener('change',()=>{$('apply-status').disabled=!current||$('ticket-status').value===current.status;});
-$('queue-status').addEventListener('change',()=>void action(()=>reload(false)));
-$('fill-example').addEventListener('click',()=>{$('kind').value='report';$('message').value='Тестовое обращение: игра вылетает после загрузки. Как исправить?';$('region').value='Сервер 01';$('message').focus();});
 $('escalate').addEventListener('click',()=>action(()=>setStatus('escalated')));
 $('audit-details').addEventListener('toggle',()=>{if($('audit-details').open&&activeTab==='history')void loadAudit();});
 $('refresh').addEventListener('click',()=>action(async()=>{if(current&&$('draft').value!==current.draft_text)throw Error('Сначала сохраните изменения черновика.');await reload();notify('Очередь обновлена.');}));
@@ -224,7 +206,6 @@ function switchTab(name){
  activeTab=name;
  document.querySelectorAll('[data-tab]').forEach(button=>{const selected=button.dataset.tab===name;button.classList.toggle('active',selected);button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;});
  for(const tab of ['summary','reply','details','history'])$('panel-'+tab).hidden=tab!==name;
- if(name==='summary')$('panel-reply').hidden=false;
  $('case-pane').scrollTop=0;
  if(name==='history'&&current)void loadAudit();
  if(name==='details'&&current)void loadAttachments(current.id);

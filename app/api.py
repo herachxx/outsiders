@@ -209,13 +209,6 @@ def create_app(service: TriageService | None = None) -> FastAPI:
             raise HTTPException(status_code=503, detail="Rules are not loaded")
         return {"status": "ok", "rules_loaded": True}
 
-    @app.get('/support/status')
-    def assistant_status():
-        ready = bool(service.rules.rules)
-        return {'ready': ready, 'classification': 'model' if service.classifier else 'rules',
-                'drafts': 'templates', 'rules_loaded': ready,
-                'message': 'Помощник готов к обработке' if ready else 'Ручной приём: правила не загружены'}
-
     app.include_router(create_routes(service, store))
     return app
 

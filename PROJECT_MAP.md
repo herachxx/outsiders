@@ -1,7 +1,5 @@
 # Карта проекта
 
-Обновление UX: /support/status показывает реальные возможности сервиса; service-status.js используется страницами игрока и оператора. workspace.css и experience.css задают новую компоновку; исходник и черновик доступны рядом, добавлены обратная навигация, фильтр статуса и тестовый пример. Отправка вручную требует подтверждения после копирования. Проверки и инструкция — docs/ux-refresh.md, tests/test_experience.py.
-
 Исправления аудита main: train проверяет holdout также для extra_rows и передаёт seed manifest загрузчику weak labels; support/store атомарно обновляет счётчик вложений, результат, версию и подтверждение; API разрешает интеграцию без ключа только с loopback. Тесты: test_classifier, test_weak_labels, test_support_workflow, test_integration. Подробности — docs/training.md, player-ui.md, integration.md.
 
 Confidence: core различает причины `confidence_empirical` и `classifier_calibrated`; эмпирическая таблица не выдаётся за калибровку модели. Регрессии — tests/test_confidence.py. Последние параллельные изменения согласованы на уровне тестов; человеческая оценка качества по-прежнему нужна.
