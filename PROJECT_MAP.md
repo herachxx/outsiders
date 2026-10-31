@@ -42,6 +42,7 @@ outsiders/
 │   ├── inspect_data.py          диагностика данных, правил и taxonomy
 │   ├── sample_for_labeling.py   слепая выборка, manifest, пустые метки
 │   ├── label_cli.py             локальная пошаговая ручная разметка B1
+│   ├── second_review.py         слепое подмножество для второго разметчика
 │   ├── train.py                 обучение из B1 gold, grouped CV только в train
 │   ├── benchmark.py             E2: локальный pipeline, p95, ошибки, параллельность
 │   ├── evaluate_drafts.py       D4: слепые пары A/B и агрегаты оценок
@@ -157,3 +158,5 @@ E1: app/ui/index.html, style.css, app.js; POST /draft/check в api.py. Лока�
 HTTP-дополнение E2: `scripts/benchmark_http.py`, `tests/test_benchmark_http.py`. Локальный HTTP-прогон синтетики 1000 запросов × 1/5/20 потоков; p95 27,4/34,3/79,0 мс без ошибок. Подробности `docs/performance.md`; финальная конфигурация и реальные тексты не измерены.
 
 B1: `scripts/label_cli.py` даёт последовательную ручную разметку приватного пакета с сохранением после каждого решения; метки по-прежнему должны назначить люди. Запуск — `docs/annotation-guide.md`.
+
+B1: `scripts/second_review.py` создаёт воспроизводимый слепой пакет для независимого второго разметчика. Готово 160 задач в `../private/annotation-b1-second-review`; метки обоих разметчиков пусты. Объединять с полным исходным manifest.
