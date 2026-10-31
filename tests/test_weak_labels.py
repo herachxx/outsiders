@@ -42,3 +42,10 @@ def test_rows_skip_holdout_reporters_cap_classes_and_exclude_admin_text(tmp_path
     assert all('secretadmin' not in r['text'] and 'holdout' not in r['text'] for r in rows)
     assert all(r['review_status'] == 'weak' and r['reporter_hash'] == train for r in rows)
     assert rows == load_weak_rows(path, cap=4)   # deterministic
+
+
+def test_custom_split_seed_excludes_its_reserved_reporters(tmp_path):
+    path = tmp_path / 'custom.jsonl'
+    path.write_text(json.dumps(record('g0', 'оск родни', '2.1')), encoding='utf-8')
+    assert int(digest(99, 'g0')[:8], 16) % 4 == 0
+    assert load_weak_rows(path, split_seed=99) == []

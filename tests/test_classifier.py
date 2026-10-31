@@ -148,6 +148,15 @@ def test_training_ignores_outcomes_and_post_admin_text():
     assert model.predict('report', '漢字漢字') is None
 
 
+def test_extra_rows_cannot_reintroduce_reserved_manifest_reporter():
+    tasks, manifest, gold = package()
+    held = next(item['reporter_hash'] for item in manifest['items'] if item['split'] == 'holdout')
+    extra = [{'kind': 'report', 'category': 'report.question', 'text': 'где магазин',
+              'reporter_hash': held, 'review_status': 'weak'}]
+    with pytest.raises(ValueError, match='holdout'):
+        train_classifier(tasks, manifest, gold, extra_rows=extra)
+
+
 def test_both_kinds_train_and_holdout_labels_do_not_change_model_report():
     tasks, manifest, gold = package()
     other_tasks, other_manifest, other_gold = copy.deepcopy((tasks, manifest, gold))

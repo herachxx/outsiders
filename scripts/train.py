@@ -119,6 +119,15 @@ def train_classifier(tasks, manifest, gold, seed=42, calibrate=False, extra_rows
 
     rows = prepare_rows(tasks, manifest, gold)
     if extra_rows:
+        from scripts.sample_for_labeling import digest
+        extra_rows = list(extra_rows)
+        reserved = {item['reporter_hash'] for item in manifest['items'] if item['split'] == 'holdout'}
+        for row in extra_rows:
+            reporter = row.get('reporter_hash')
+            if not isinstance(reporter, str) or not reporter.strip():
+                raise ValueError('Extra row requires reporter identity')
+            if reporter in reserved or int(digest(manifest.get('seed', 42), reporter)[:8], 16) % 4 == 0:
+                raise ValueError('Extra rows include a reserved holdout reporter')
         # Hand labels are repeated so that noisy extra rows (scripts.weak_labels) do not drown them.
         rows = rows * gold_repeat + list(extra_rows)
     report = {'artifact_version': ARTIFACT_VERSION, 'preprocess_version': PREPROCESS_VERSION,
@@ -193,7 +202,7 @@ def main():
         extra = None
         if args.weak_train:
             from scripts.weak_labels import load_weak_rows
-            extra = load_weak_rows(args.weak_train, args.weak_cap)
+            extra = load_weak_rows(args.weak_train, args.weak_cap, split_seed=manifest.get('seed', 42))
         model, report = train_classifier(list(read_records(args.tasks)), manifest,
                                          gold, args.seed, args.calibrate, extra, args.gold_repeat)
         save_training(model, report, target)
