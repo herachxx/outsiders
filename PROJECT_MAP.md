@@ -166,3 +166,5 @@ B1: `scripts/merge_labels.py` дополнительно записывает п
 kk/uz routing: общий `multilingual_sensitive_category` в `app/priority.py` защищает report.account/payment и p0 на ограниченных сигналах потери доступа/оплаты; вызывается core и route. `tests/test_multilingual_routing.py` проверяет ошибочную модель и обычные вопросы. Реальная полнота и проверка носителями ещё нужны.
 
 Этот детектор также покрывает отдельные смешанные kk/uz написания и исключает четыре явные отрицательные формы взлома. Отрицание не понижает уже чувствительную категорию; новая активная проблема в отдельной фразе сохраняет p0. Подробные ограничения — в annotation-guide.
+
+E2: `scripts/benchmark_process.py`, `tests/test_benchmark_process.py` — отдельный batch-процесс, полное время и OS peak RSS. Реальный valid 1000: 1,918 с, 33,25 МБ RAM, ошибок 0; приватный отчёт `../private/benchmark-process-v1.json`. Эвристики/шаблоны, без ML; граница замера описана в docs/performance.md.
