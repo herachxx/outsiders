@@ -17,11 +17,14 @@ def test_appeal_requires_human_even_with_question_category():
     assert route('report.question', 'Прошу разбанить меня').needs_human
 
 
-def test_attachments_raise_review_priority_without_proving_violation():
-    result = route('complaint.insult', 'Оскорбление', has_attachments=True)
-    assert result.priority == 'p1'
-    assert result.needs_human
-    assert 'attachments_require_review' in result.reasons
+def test_attachments_do_not_change_priority_because_every_complaint_has_them():
+    assert route('complaint.insult', 'Оскорбление', has_attachments=True).priority == 'p2'
+    assert route('complaint.dm', 'убил', has_attachments=True).priority == 'p2'
+    assert route('complaint.invalid', 'жб', has_attachments=True).priority == 'p3'
+    assert route('complaint.cheat', 'чит', has_attachments=True).priority == 'p1'
+    assert not route('complaint.insult', 'Оскорбление', has_attachments=True).needs_human
+    assert route('complaint.admin', 'не согласен', has_attachments=True).needs_human
+    assert route('complaint.cheat', 'Прошу разбан', has_attachments=True).needs_human
 
 
 def test_mechanics_question_stays_low_priority():
