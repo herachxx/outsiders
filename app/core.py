@@ -205,7 +205,7 @@ class TriageService:
             "draft_reply": draft,
             "needs_human": needs_human,
             "confidence": confidence,  # Category probability or empirical estimate; see reasons.
-            "reasons": reasons,
+            "reasons": list(dict.fromkeys(reasons)),
         }
 
     @staticmethod

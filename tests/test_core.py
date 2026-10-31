@@ -358,3 +358,9 @@ def test_invented_rule_numbers_never_appear_in_extracted_rule_refs_or_citations(
     # with no rules loaded nothing can be checked, so the player's wording is reported as written
     unchecked = TriageService(RuleIndex([])).triage(ticket("правило 99.9", rule_refs_raw="99.9"))
     assert unchecked["extracted"]["rule_refs"] == ["99.9"]
+
+
+def test_reasons_list_has_no_repeated_codes():
+    service = TriageService(RuleIndex.from_data(RULES))
+    out = service.triage(ticket("Troll99 нарушил правило 99.9 и статью 100.500, забаньте по правилу 99.9"))
+    assert len(out["reasons"]) == len(set(out["reasons"]))
