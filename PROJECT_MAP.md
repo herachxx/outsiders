@@ -184,3 +184,5 @@ E2: `scripts/benchmark_process.py`, `tests/test_benchmark_process.py` — отд
 Соответствие критериям жюри и ограничения оценки — `docs/criteria.md`.
 
 Полосы обработки: `app/handling.py` (auto/review/escalate в `reasons`, `handling` в `/integration/ticket`), журнал решений администрации `app/decisions.py` (`GRAND_DECISIONS_PATH`, `POST /integration/decision`, `GET /integration/decisions/stats`), тесты `tests/test_handling.py`; batch поддерживает `.gz` на выходе. Описание — `docs/integration.md`.
+
+Слабые метки для обучения: `scripts/weak_labels.py` и `scripts/train.py --weak-train` (violation → категория, только метки, holdout исключён); текущая модель `../private/classifier-claude-weak-v2` (holdout B1: accuracy категории 0,807, macro-F1 категории 0,62). Тесты `tests/test_weak_labels.py`.

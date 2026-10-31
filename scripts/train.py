@@ -111,18 +111,22 @@ def grouped_validation(rows, kind, seed):
     return result
 
 
-def train_classifier(tasks, manifest, gold, seed=42, calibrate=False):
+def train_classifier(tasks, manifest, gold, seed=42, calibrate=False, extra_rows=None, gold_repeat=1):
     import sklearn
     import numpy
     import scipy
     import joblib
 
     rows = prepare_rows(tasks, manifest, gold)
+    if extra_rows:
+        # Hand labels are repeated so that noisy extra rows (scripts.weak_labels) do not drown them.
+        rows = rows * gold_repeat + list(extra_rows)
     report = {'artifact_version': ARTIFACT_VERSION, 'preprocess_version': PREPROCESS_VERSION,
               'policy_version': POLICY_VERSION, 'sklearn_version': sklearn.__version__,
               'versions': {'python': platform.python_version(), 'numpy': numpy.__version__,
                            'scipy': scipy.__version__, 'joblib': joblib.__version__},
-              'seed': seed, 'holdout_evaluated': False, 'confidence_calibrated': False,
+              'seed': seed, 'extra_rows': len(extra_rows or ()), 'gold_repeat': gold_repeat if extra_rows else 1,
+              'holdout_evaluated': False, 'confidence_calibrated': False,
               'validation_scope': 'reporter-grouped CV within labeled train only',
               'prediction_scope': 'raw model before service fallback and safety overrides', 'kinds': {}}
     # Fingerprint includes features and labels, but the report contains no raw texts or identifiers.
@@ -173,6 +177,9 @@ def main():
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--calibrate', action='store_true', help='Reserve separate reporter groups for sigmoid calibration and check')
+    parser.add_argument('--weak-train', help='tickets_train.jsonl.gz: add class-capped weak labels from violation (complaints)')
+    parser.add_argument('--weak-cap', type=int, default=400)
+    parser.add_argument('--gold-repeat', type=int, default=3, help='Repeat hand labels when weak rows are added')
     args = parser.parse_args()
     try:
         target = private_path(args.output)
@@ -183,8 +190,12 @@ def main():
         gold = list(read_records(args.gold))
         if not gold:
             parser.exit(2, 'No gold labels: complete B1 annotation and merge_labels before training.\n')
+        extra = None
+        if args.weak_train:
+            from scripts.weak_labels import load_weak_rows
+            extra = load_weak_rows(args.weak_train, args.weak_cap)
         model, report = train_classifier(list(read_records(args.tasks)), manifest,
-                                         gold, args.seed, args.calibrate)
+                                         gold, args.seed, args.calibrate, extra, args.gold_repeat)
         save_training(model, report, target)
     except (ValueError, KeyError, TypeError) as error:
         # Do not echo validation payloads or raw ticket text to the console.
