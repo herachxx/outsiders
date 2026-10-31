@@ -34,3 +34,15 @@ def test_clear_text_is_confident_and_ambiguous_scripts_stay_uncertain():
     assert detect('адмін розверни мене пожалуста').uncertain          # Ukrainian/і-only
     assert detect('sk <url>').lang == 'und'                            # rule code, no language signal
     assert detect('Miras_Baranov52 деген не үшін бан').lang == 'kk'    # nickname ignored
+
+
+def test_kazakh_without_special_letters_and_ukrainian_markers():
+    assert detect('осындай секс керек па саған').lang == 'kk'
+    assert detect('Маған не үшін бан берді').lang == 'kk'
+    assert detect('2.1оп дати бан на 31 день щоб знав як потрібно розмовляти').lang == 'und'
+    assert detect('қғ қғ').lang == 'und'
+
+
+def test_kazakh_word_with_i_is_not_swallowed_by_the_ukrainian_branch():
+    assert detect('сіз маған неге бан бердіңіз').lang == 'kk'
+    assert detect('адмін розверни мене пожалуста').lang == 'und'

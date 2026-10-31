@@ -20,6 +20,9 @@ UZ_LATIN_WORDS = {
     'kishanladi', 'moshina', 'qurol', 'edim', 'ekan', 'nima', 'noroziman', 'jazo', 'qilyabdi', 'qildi', 'bogan'}
 EN_WORDS = {'help', 'please', 'the', 'is', 'my', 'you', 'what', 'how', 'hello', 'where', 'this', 'not', 'and', 'with',
             'was', 'for', 'to', 'me', 'he', 'his', 'it', 'on', 'do', 'i'}
+KK_WORDS = {'керек', 'және', 'деген', 'болып', 'емес', 'жоқ', 'саған', 'маған', 'менің', 'неге', 'үшін', 'қалай',
+            'осындай', 'болды', 'рахмет', 'сәлем', 'бердi', 'берді', 'сіз', 'біз', 'олар', 'қазір', 'бүгін', 'ештеңе'}
+UK_WORDS = {'щоб', 'потрібно', 'мені', 'мене', 'дати', 'знав', 'будь', 'ласка', 'допоможіть', 'який', 'яка', 'їх'}
 UZ_CYRILLIC_WORDS = {'билан', 'учун', 'килиб', 'қилиб', 'гаплашиш', 'ёрдам', 'илтимос', 'йўқ', 'уйинчилар', 'тахдид'}
 # Rule codes and nicknames carry no language signal.
 NOISE = re.compile(r"\b(?:gz|op|dm|sk|tk|db|fw|rp|nrp|orp|url|digits|handle|ck)\b|\b\w+_\w+\b")
@@ -58,6 +61,9 @@ def detect(text, model=None):
         return LanguageDecision('und', True, True)
     if kazakh_letters:
         return LanguageDecision('kk', len(kazakh_letters) < 2 and cyrillic < 20)
+    words = set(re.findall('[а-яёіқғәңүұөһ]+', text))
+    if not words & UK_WORDS and len(words & KK_WORDS) and not re.search('[їєґ]', text):
+        return LanguageDecision('kk', len(words & KK_WORDS) < 2)
     if re.search('[їєґ]', text) or ('і' in text and not re.search('[ыэъ]', text)):
         # Ukrainian/Belarusian (and і-only Kazakh) cannot be told apart from Russian by letters alone.
         return LanguageDecision('und', True)
@@ -73,9 +79,10 @@ def detect(text, model=None):
         if len(tokens & EN_WORDS) >= 2:
             return LanguageDecision('en', False)
         return LanguageDecision('lat', True)
+    if words & UK_WORDS:
+        return LanguageDecision('und', True)
     if re.search('[қғ]', text):
         return LanguageDecision('und', True)
-    words = set(re.findall('[а-яёіқғ]+', text))
     if words & UZ_CYRILLIC_WORDS:
         return LanguageDecision('uz', True)
     # Plain Russian letters only: trust a sentence-sized text, keep short fragments uncertain.
