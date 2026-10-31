@@ -4,7 +4,7 @@ import re
 
 from .rules import RuleIndex
 from .schemas import TriageRequest
-from .priority import route, MANDATORY_HUMAN
+from .priority import route, MANDATORY_HUMAN, multilingual_sensitive_category
 from .preprocess import before_admin, player_text as extract_player_text, normalize
 from .language import detect, language
 from .facts import extract_facts
@@ -111,6 +111,10 @@ class TriageService:
 
     @staticmethod
     def _category(kind: str, text: str) -> str:
+        if kind == 'report':
+            sensitive = multilingual_sensitive_category(text)
+            if sensitive:
+                return sensitive
         for category, pattern in CATEGORY_PATTERNS[kind]:
             if re.search(pattern, text):
                 return category

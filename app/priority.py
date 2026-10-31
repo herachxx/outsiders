@@ -6,6 +6,20 @@ POLICY_VERSION = 'draft-2026-10-30'
 MANDATORY_HUMAN = {'report.account', 'report.payment', 'complaint.admin'}
 
 
+def multilingual_sensitive_category(text: str) -> str | None:
+    """Conservative kk/Latin uz signals; not a complete language classifier."""
+    text = ' '.join(text.casefold().split())
+    for mark in ('‘', '’', 'ʻ', 'ʼ', '`'):
+        text = text.replace(mark, "'")
+    account = r"(?:аккаунт|тіркелгі).{0,30}(?:бұзыл|кіре алмай)|(?:akkaunt|hisob).{0,30}(?:kira olmay|buzib kir)"
+    payment = r"төлем.{0,25}жасады|ақша.{0,20}(?:түспеді|шешілді)|pul.{0,20}yechild|to'lov.{0,20}qild|donat.{0,20}kelmadi"
+    if re.search(account, text):
+        return 'report.account'
+    if re.search(payment, text):
+        return 'report.payment'
+    return None
+
+
 @dataclass(frozen=True)
 class RouteDecision:
     priority: str
@@ -20,7 +34,7 @@ def route(category: str, text: str, has_attachments: bool = False) -> RouteDecis
         'report.account', 'report.payment', 'report.help', 'report.complaint', 'report.offtopic'}
     if category in MANDATORY_HUMAN:
         reasons.append('mandatory_human')
-    urgent = bool(re.search(r'взлом|не могу войти|потер.{0,15}доступ|оплат|платеж|деньги спис|массов.{0,12}баг|угроз.{0,20}(жизн|вне игры)', text))
+    urgent = bool(multilingual_sensitive_category(text) or re.search(r'взлом|не могу войти|потер.{0,15}доступ|оплат|платеж|деньги спис|массов.{0,12}баг|угроз.{0,20}(жизн|вне игры)', text))
     appeal = bool(re.search(r'разбан|апелляц|обжал|бан.{0,15}без причин|мут.{0,15}без причин', text))
     if appeal:
         human = True
