@@ -160,3 +160,5 @@ HTTP-дополнение E2: `scripts/benchmark_http.py`, `tests/test_benchmark
 B1: `scripts/label_cli.py` даёт последовательную ручную разметку приватного пакета с сохранением после каждого решения; метки по-прежнему должны назначить люди. Запуск — `docs/annotation-guide.md`.
 
 B1: `scripts/second_review.py` создаёт воспроизводимый слепой пакет для независимого второго разметчика. Готово 160 задач в `../private/annotation-b1-second-review`; метки обоих разметчиков пусты. Объединять с полным исходным manifest.
+
+B1: `scripts/merge_labels.py` дополнительно записывает приватный `agreement.json`: попарное согласие и невзвешенная Cohen kappa по четырём полям, только общие полные метки. Проверки — `tests/test_annotation_agreement.py`. Реальные оценки ещё отсутствуют.

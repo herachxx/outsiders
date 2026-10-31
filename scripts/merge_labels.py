@@ -1,12 +1,36 @@
 """Validate annotations and separate disagreements from labeled data."""
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
+from itertools import combinations
 import csv
 import json
 from typing import get_args
 
 from app.schemas import Category, Language
 from scripts.sample_for_labeling import private_path
+
+
+def agreement_report(groups):
+    """Pairwise unweighted Cohen kappa on complete shared annotations only."""
+    pairs = defaultdict(list)
+    for rows in groups.values():
+        complete = sorted((row for row in rows if row['status'] == 'labeled'), key=lambda row: row['annotator_id'])
+        for left, right in combinations(complete, 2):
+            pairs[(left['annotator_id'], right['annotator_id'])].append((left, right))
+    result = []
+    for annotators, shared in sorted(pairs.items()):
+        fields = {}
+        for field in ('category', 'priority', 'language', 'needs_human'):
+            left = Counter(a[field] for a, _ in shared)
+            right = Counter(b[field] for _, b in shared)
+            matches = sum(a[field] == b[field] for a, b in shared)
+            observed = matches / len(shared)
+            expected = sum(count * right[value] for value, count in left.items()) / len(shared) ** 2
+            fields[field] = {'matches': matches, 'agreement': observed,
+                             'cohen_kappa': (observed - expected) / (1 - expected) if expected < 1 else None}
+        result.append({'annotators': list(annotators), 'shared_complete': len(shared), 'fields': fields})
+    return {'pairs': result, 'tasks_with_multiple_complete': sum(sum(row['status'] == 'labeled' for row in rows) >= 2 for rows in groups.values()),
+            'note': 'Only complete shared labels; adjudication excluded. Kappa is unweighted; null when undefined. No overlap means no estimate.'}
 
 
 def merge_annotations(manifest, annotations):
@@ -65,7 +89,8 @@ def merge_annotations(manifest, annotations):
                          'policy_version': manifest['policy_version'],
                          'review_status': 'agreed' if len(rows) > 1 else 'single',
                          'annotators': [row['annotator_id'] for row in rows]})
-    return {'gold': gold, 'conflicts': conflicts, 'unlabeled': len(items) - len(groups)}
+    return {'gold': gold, 'conflicts': conflicts, 'unlabeled': len(items) - len(groups),
+            'agreement': agreement_report(groups)}
 
 
 def main():
@@ -89,6 +114,8 @@ def main():
         with (target / f'{name}.jsonl').open('w', encoding='utf-8') as stream:
             for row in result[name]:
                 stream.write(json.dumps(row, ensure_ascii=False) + '\n')
+    with (target / 'agreement.json').open('w', encoding='utf-8') as stream:
+        json.dump(result['agreement'], stream, ensure_ascii=False, indent=2, allow_nan=False)
     print(json.dumps({'labeled': len(result['gold']), 'conflicts': len(result['conflicts']), 'unlabeled': result['unlabeled']}))
 
 
