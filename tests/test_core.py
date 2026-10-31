@@ -45,7 +45,11 @@ def test_slang_abbreviations_are_classified_not_other():
         "deathmatch у банка": "complaint.dm",
         "nrp на дороге": "complaint.dm",
         "использует фаст ран": "complaint.cheat",
-        "не согласен": "complaint.other",
+        "не согласен": "complaint.admin",
+        "прошу снять варн": "complaint.admin",
+        "не согласен с наказанием за оскорбление": "complaint.admin",
+        "пошла нахуй шлюха": "complaint.insult",
+        "меня посадили без причины": "complaint.dm",
         "костер": "complaint.other",
     }
     for text, expected in cases.items():
