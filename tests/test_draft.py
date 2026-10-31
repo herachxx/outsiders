@@ -36,8 +36,11 @@ def test_missing_fields_and_evidence_change_draft():
     assert 'ещё не проверено' in supplied
 
 
-def test_unknown_language_uses_explicit_english_draft_label():
-    assert build_draft(request(), 'report.offtopic', 'und', False, [])['lang'] == 'en'
+def test_unknown_language_uses_server_language_then_russian():
+    assert build_draft(request(), 'report.offtopic', 'und', False, [])['lang'] == 'ru'
+    assert build_draft(request(server_lang='uz'), 'report.offtopic', 'lat', False, [])['lang'] == 'uz'
+    assert build_draft(request(server_lang='fr'), 'report.offtopic', 'und', False, [])['lang'] == 'ru'
+    assert build_draft(request(server_lang='uz'), 'report.offtopic', 'en', False, [])['lang'] == 'en'
 
 
 @pytest.mark.parametrize('lang', ['ru', 'kk', 'uz', 'en'])

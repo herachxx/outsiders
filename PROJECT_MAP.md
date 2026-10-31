@@ -139,7 +139,7 @@ git diff --check
 
 Оценка B3: `scripts.evaluate --calibrate` поддерживает вложенное разделение групп, сравнение с некалиброванным сервисом и эвристикой, reliability/ECE по языкам с учётом покрытия. Проверки — `tests/test_evaluate.py`. Следующая независимая техническая задача C1 — полноценное определение языка; реальные метрики B2/B3 ожидают разметки.
 
-C1: `app/language.py` — консервативный детектор с LanguageDecision и optional fastText через GRAND_LANGUAGE_MODEL_PATH; `tests/test_language.py`, инструкция `docs/language.md`. Эвристический режим всегда language_uncertain и человек. Реальная модель и качество kk/uz не проверены. Следующий этап C2 — поиск и релевантность правил.
+C1: `app/language.py` — консервативный детектор с LanguageDecision и optional fastText через GRAND_LANGUAGE_MODEL_PATH; `tests/test_language.py`, инструкция `docs/language.md`. Позже уверенность ограничена ясными случаями (см. docs/language.md); короткие фрагменты, украинский и смешение остаются неуверенными. Реальная модель и качество kk/uz не проверены. Следующий этап C2 — поиск и релевантность правил.
 
 C2 выполнен: `app/facts.py` — claim/reported_player_statement/metadata с исходным полем и offsets, без verified; `tests/test_facts.py`, `docs/facts.md`. В core extracted.claims содержит отдельные утверждения player. Название C2 ранее ошибочно связывалось с retrieval; источник порядка этапов — implementation-plan.md.
 
@@ -178,3 +178,5 @@ kk/uz routing: общий `multilingual_sensitive_category` в `app/priority.py`
 E2: `scripts/benchmark_process.py`, `tests/test_benchmark_process.py` — отдельный batch-процесс, полное время и OS peak RSS. Реальный valid 1000: 1,918 с, 33,25 МБ RAM, ошибок 0; приватный отчёт `../private/benchmark-process-v1.json`. Эвристики/шаблоны, без ML; граница замера описана в docs/performance.md.
 
 Приоритет и человек (исправлено): у каждой жалобы в train есть вложение (лаунчер требует), поэтому правило «вложения → p1» превращало все жалобы в p1; оно удалено. `needs_human` теперь по taxonomy: account, payment, complaint.admin, report.help, апелляции и p0; раньше был у всех жалоб. На holdout B1 (метки Claude): accuracy приоритета 0,30→0,87, macro-F1 0,30→0,85, recall p1 0,88, p3 0,80; p0 в holdout нет. `language_uncertain` всё ещё отправляет человеку любое обращение при эвристическом детекторе.
+
+Соответствие критериям жюри и ограничения оценки — `docs/criteria.md`.

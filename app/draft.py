@@ -9,8 +9,16 @@ def templates():
     return json.loads(files('app').joinpath('templates', 'drafts.json').read_text(encoding='utf-8'))
 
 
+def draft_language(request, lang):
+    """Reply in the detected language; for unknown text use the server language, else Russian (the main audience)."""
+    if lang in templates():
+        return lang
+    hint = (getattr(request, 'server_lang', None) or '').strip().casefold()
+    return hint if hint in templates() else 'ru'
+
+
 def build_draft(request, category, lang, has_evidence, cited):
-    actual_lang = lang if lang in templates() else 'en'
+    actual_lang = draft_language(request, lang)
     phrases = templates()[actual_lang]
     if category == 'complaint.admin':
         key = 'admin'

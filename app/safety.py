@@ -2,7 +2,7 @@
 import re
 from pydantic import ValidationError
 
-from .draft import build_draft
+from .draft import build_draft, draft_language
 from .preprocess import player_text
 from .schemas import Draft
 
@@ -44,6 +44,6 @@ def check_draft(candidate, rules, request, category, lang, has_evidence):
     except (ValidationError, TypeError, ValueError, KeyError):
         reasons.append('safety_invalid_draft')
     if reasons:
-        actual_lang = lang if lang in FALLBACK else 'en'
+        actual_lang = draft_language(request, lang)
         return {'lang': actual_lang, 'text': FALLBACK[actual_lang], 'cited': []}, sorted(set(reasons))
     return data, []
