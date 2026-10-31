@@ -64,3 +64,5 @@ body{background:#f5f6f8;color:var(--text)}::selection{background:#ffe3a1;color:#
 .answer-card .answer-content{color:#29343e}
 
 @media(max-width:760px){.mobile-nav{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.assistant-status{margin:auto 14px 18px;padding:10px 12px;border:1px solid var(--line,#2a2d40);border-radius:10px;font-size:13px;line-height:1.4;color:var(--muted,#979bad)}.assistant-status::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:8px}.assistant-status[data-state=ok]::before{background:#2fb36b}.assistant-status[data-state=warn]::before{background:#e2a800}.assistant-status[data-state=error]::before{background:#d64545}.mobile-nav{grid-auto-flow:column;grid-auto-columns:1fr}

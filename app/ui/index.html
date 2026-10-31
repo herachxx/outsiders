@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
+<link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f5f6f8">
   <meta name="description" content="Grand Mobile — обращения и помощь игрокам.">
@@ -43,7 +44,9 @@
         <button class="nav-link active" type="button" data-view="home" aria-current="page"><svg><use href="#i-home"/></svg>Главная</button>
         <button class="nav-link" type="button" data-view="history"><svg><use href="#i-message"/></svg>Мои обращения<span id="nav-count" class="nav-count" hidden>0</span></button>
         <a class="nav-link" href="https://support.grnd.gg/ru/" target="_blank" rel="noopener noreferrer"><svg><use href="#i-book"/></svg>База знаний<svg class="trail-icon"><use href="#i-external"/></svg></a>
+        <a class="nav-link" id="to-admin" href="/admin"><svg><use href="#i-shield"/></svg>Панель оператора</a>
       </nav>
+      <p class="assistant-status" id="assistant-status" role="status" data-state="loading">Проверяем помощника</p>
     </aside>
 
     <div class="main-area">
@@ -106,6 +109,6 @@
       </main>
     </div>
   </div>
-  <nav class="mobile-nav" aria-label="Мобильная навигация"><button type="button" class="mobile-nav-item active" data-view="home"><svg><use href="#i-home"/></svg><span>Главная</span></button><button type="button" class="mobile-nav-item" data-view="history"><svg><use href="#i-message"/></svg><span>Обращения</span></button><a class="mobile-nav-item" href="https://support.grnd.gg/ru/" target="_blank" rel="noopener noreferrer"><svg><use href="#i-book"/></svg><span>Помощь</span></a></nav>
+  <nav class="mobile-nav" aria-label="Мобильная навигация"><button type="button" class="mobile-nav-item active" data-view="home"><svg><use href="#i-home"/></svg><span>Главная</span></button><button type="button" class="mobile-nav-item" data-view="history"><svg><use href="#i-message"/></svg><span>Обращения</span></button><a class="mobile-nav-item" href="https://support.grnd.gg/ru/" target="_blank" rel="noopener noreferrer"><svg><use href="#i-book"/></svg><span>Помощь</span></a><a class="mobile-nav-item" href="/admin"><svg><use href="#i-shield"/></svg><span>Оператор</span></a></nav>
 </body>
 </html>

@@ -58,6 +58,25 @@ def _multipart_available() -> bool:
             return False
 
 
+SELFTEST_TEXTS = [
+    ('complaint', 'Игрок Arman_Petrov оскорбил меня и мою семью в чате, скрины есть, 2.1 ОП'),
+    ('complaint', 'Игрок летает и стреляет через стены, использует софт, фрапс прикрепил'),
+    ('report', 'Взломали аккаунт, сменили пароль, не могу войти'),
+    ('report', 'Где находится автошкола?'),
+]
+
+
+def describe_service(service) -> dict:
+    """Plain facts about what the assistant is doing right now; no tickets, no secrets."""
+    rules = getattr(service, 'rules', None)
+    items = list(getattr(rules, 'rules', []) or [])
+    model = getattr(service, 'classifier', None) is not None
+    return {'ok': True, 'rules_loaded': bool(items), 'rules_count': len(items),
+            'rules_version': items[0].rules_hash[:8] if items else None,
+            'model_loaded': model, 'mode': 'manual' if not items else ('rules+model' if model else 'rules'),
+            'operator_configured': auth.configured()}
+
+
 def create_routes(service, store: TicketStore):
     router=APIRouter()
     rate=defaultdict(deque)
@@ -81,6 +100,15 @@ def create_routes(service, store: TicketStore):
         except Missing:raise HTTPException(404,'Ticket not found') from None
         except Conflict as exc:raise HTTPException(409,str(exc)) from None
 
+    def analyse(data, topic=None):
+        """Run the assistant and record how: time, mode and rules version travel with the result."""
+        started = time.perf_counter()
+        result = service.triage(data) if service.rules.rules else safe_fallback(topic)
+        info = describe_service(service)
+        result['meta'] = {'ms': round((time.perf_counter() - started) * 1000, 2), 'mode': info['mode'],
+                          'rules_version': info['rules_version'], 'analysed_at': datetime.now(timezone.utc).isoformat(timespec='seconds')}
+        return result
+
     def safe_fallback(topic=None):
         # This is a player-selected topic, not a model prediction or validated finding.
         category={'question':'report.question','complaint':'complaint.other',
@@ -102,7 +130,7 @@ def create_routes(service, store: TicketStore):
         data = data.model_copy(update={'images_count': 0, 'messages': [
             message.model_copy(update={'attachments': 0}) for message in data.messages]})
         # This is a synthetic service, not an official Grand Mobile delivery.
-        result=service.triage(data) if service.rules.rules else safe_fallback(payload.topic)
+        result=analyse(data,payload.topic)
         if data.kind=='complaint' or result['category'] in ('report.payment','report.account','complaint.admin'):
             result['needs_human']=True
         try:
@@ -198,6 +226,28 @@ def create_routes(service, store: TicketStore):
         response.set_cookie(auth.COOKIE,cookie,httponly=True,samesite='strict',secure=(request.url.scheme=='https' or os.getenv('GRAND_SECURE_COOKIES')=='1'),max_age=auth.SESSION_TTL,path='/')
         return {'ok':True,'csrf':auth.csrf(cookie)}
 
+    @router.get('/admin/api/status')
+    def assistant_status(request: Request):
+        admin(request)
+        return describe_service(service)
+
+    @router.post('/admin/api/selftest')
+    def selftest(request: Request):
+        """Run the assistant on fixed sample tickets (nothing is stored) so the operator can see it working."""
+        admin(request, True)
+        info = describe_service(service)
+        if not info['rules_loaded']:
+            return {'status': info, 'results': [], 'error': 'Правила не загружены: помощник работает в ручном режиме.'}
+        out = []
+        for kind, text in SELFTEST_TEXTS:
+            request_model = TriageRequest.model_validate({'kind': kind, 'messages': [{'role': 'player', 'text': text}], 'images_count': 1 if kind == 'complaint' else 0})
+            started = time.perf_counter()
+            result = service.triage(request_model)
+            out.append({'text': text, 'kind': kind, 'lang': result['lang'], 'category': result['category'], 'priority': result['priority'],
+                        'needs_human': result['needs_human'], 'confidence': result['confidence'],
+                        'cited': [c['ref'] for c in result['draft_reply']['cited']], 'ms': round((time.perf_counter() - started) * 1000, 2)})
+        return {'status': info, 'results': out}
+
     @router.post('/admin/api/logout')
     def logout(request: Request,response: Response):
         admin(request,True);response.delete_cookie(auth.COOKIE,path='/');return {'ok':True}
@@ -243,7 +293,7 @@ def create_routes(service, store: TicketStore):
         data=payload.request
         if not any(m.text.strip() for m in data.messages if m.role=='player'):
             raise HTTPException(422,'Empty player message')
-        result=service.triage(data) if service.rules.rules else safe_fallback(payload.topic)
+        result=analyse(data,payload.topic)
         if data.kind=='complaint' or result['category'] in ('report.payment','report.account','complaint.admin'):
             result['needs_human']=True
         try:

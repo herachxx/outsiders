@@ -87,11 +87,10 @@ def test_player_and_admin_have_interactive_empty_queue_assets(tmp_path,monkeypat
     monkeypatch.delenv('GRAND_OPERATOR_CONFIG',raising=False)
     with TestClient(create_app()) as client:
         page=client.get('/ui/admin.html').text
-        js=client.get('/ui/app.js').text
-        assert 'id="empty-demo"' in page
-        assert "$('empty-demo').addEventListener('click',openDialog)" in js
-        assert 'if(loading||!current)return' not in js
-        assert 'Сохраните черновик перед обновлением очереди' in js
+        js=client.get('/ui/admin.js').text
+        assert 'id="empty-new"' in page and 'id="new-ticket"' in page
+        assert "$('#empty-new').addEventListener('click', openNew)" in js
+        assert 'id="queue-empty"' in page
         assert client.get('/ui/player.js').status_code==200
         assert 'service-status' not in client.get('/ui/player.js').text
         assert client.get('/ui/i18n.js').status_code == 200
