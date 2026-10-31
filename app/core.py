@@ -53,10 +53,10 @@ class TriageService:
         language_decision = detect(player_text)
         lang = language_decision.lang
         heuristic_category = self._category(request.kind, search_text, request.rule_refs_raw or '')
-        predicted = self.classifier.predict(request.kind, search_text) if self.classifier else None
         # A specific complaint rule (text or the player's rule field) wins; the model decides the rest.
-        if predicted and request.kind == 'complaint' and heuristic_category != 'complaint.other':
-            predicted = None
+        # Skipping the model call there saves most of its per-ticket cost without changing the result.
+        rule_decided = request.kind == 'complaint' and heuristic_category != 'complaint.other'
+        predicted = self.classifier.predict(request.kind, search_text) if self.classifier and not rule_decided else None
         category = predicted or heuristic_category
         # An uncalibrated model must not override existing sensitive routing.
         safety_override = heuristic_category in MANDATORY_HUMAN and category != heuristic_category

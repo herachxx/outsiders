@@ -1,9 +1,10 @@
+import hmac
 import os
 from contextlib import asynccontextmanager
 from typing import Literal
 from pydantic import ValidationError
 
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import Body, FastAPI, HTTPException, Header
 
 from .core import TriageService
 from .rules import RuleIndex
@@ -78,6 +79,39 @@ def create_app(service: TriageService | None = None) -> FastAPI:
         except ValidationError:
             raise HTTPException(status_code=503, detail='Invalid service output') from None
         return to_submission(result) if format == 'submission' else result.model_dump()
+
+    api_key = os.environ.get('GRAND_API_KEY')
+
+    @app.post('/integration/ticket')
+    def integration_ticket(ticket: dict = Body(...), format: Literal['submission', 'internal'] = 'submission',
+                           x_api_key: str | None = Header(default=None)) -> dict:
+        """Accept a Grand Mobile ticket record as exported (outcome fields are ignored), return triage only."""
+        if api_key and not (x_api_key and hmac.compare_digest(x_api_key, api_key)):
+            raise HTTPException(status_code=401, detail='Invalid API key')
+        if not service.rules.rules:
+            raise HTTPException(status_code=503, detail='Rules are not loaded')
+        ticket_id = ticket.get('ticket_id')
+        if not isinstance(ticket_id, str) or not ticket_id.strip():
+            raise HTTPException(status_code=422, detail='ticket_id is required')
+        payload = {k: v for k, v in ticket.items() if k in TriageRequest.model_fields}
+        try:
+            request = TriageRequest.model_validate(payload)
+        except ValidationError:
+            raise HTTPException(status_code=422, detail='Invalid ticket') from None
+        try:
+            output = service.triage(request)
+            if history:
+                import time
+                from .dedupe import annotate_history
+                try:
+                    annotate_history(output, request, history, ticket_id, time.time())
+                except ValueError:
+                    raise HTTPException(status_code=409, detail='Ticket identity conflict') from None
+            result = TriageResponse.model_validate(output)
+        except ValidationError:
+            raise HTTPException(status_code=503, detail='Invalid service output') from None
+        return {'ticket_id': ticket_id,
+                'result': to_submission(result) if format == 'submission' else result.model_dump()}
 
     @app.get("/health")
     def health() -> dict:
