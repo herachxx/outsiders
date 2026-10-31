@@ -7,7 +7,7 @@ name = "grand-support-copilot"
 version = "0.1.0"
 description = "Safe baseline for Grand Mobile support triage"
 requires-python = ">=3.12"
-dependencies = ["fastapi>=0.115,<1", "starlette>=0.40,<0.50", "pydantic>=2.8,<3", "uvicorn>=0.30,<1"]
+dependencies = ["fastapi>=0.115,<1", "starlette>=0.40,<0.50", "pydantic>=2.8,<3", "uvicorn>=0.30,<1", "httpx>=0.27,<1"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "httpx>=0.27,<1"]
