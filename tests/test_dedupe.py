@@ -65,3 +65,38 @@ def test_http_history_identity_conflict_and_retry(tmp_path, monkeypatch):
         assert repeated.json()['is_spam_or_duplicate'] is True
         conflict = client.post('/triage', json=request(text='Другой вопрос').model_dump(), headers={'X-Ticket-ID': 'one'})
         assert conflict.status_code == 409
+
+
+def test_batch_history_accepts_export_timestamps_without_timezone_and_is_on_by_default(tmp_path):
+    import json
+    import subprocess
+    import sys
+    rows = [{'ticket_id': f't{i}', 'created_at': f'2026-08-01T10:0{i}:00', 'kind': 'complaint', 'reporter_hash': 'rep1',
+             'reported_hash': 'bad1', 'messages': [{'role': 'player', 'text': 'оск родни в чате'}]} for i in range(3)]
+    rows.append({**rows[0], 'ticket_id': 'other', 'reporter_hash': 'rep2'})
+    source, out = tmp_path / 'in.jsonl', tmp_path / 'out.jsonl'
+    source.write_text(''.join(json.dumps(r, ensure_ascii=False) + '\n' for r in rows), encoding='utf-8')
+    subprocess.run([sys.executable, '-m', 'app.batch', '--input', str(source), '--output', str(out)],
+                   check=True, capture_output=True)
+    result = [json.loads(line) for line in out.read_text(encoding='utf-8').splitlines()]
+    assert [r['is_spam_or_duplicate'] for r in result] == [False, True, True, False]
+    assert not any('history_metadata_missing_or_invalid' in r['reasons'] for r in result)
+    subprocess.run([sys.executable, '-m', 'app.batch', '--input', str(source), '--output', str(tmp_path / 'no.jsonl'), '--no-history'],
+                   check=True, capture_output=True)
+    plain = [json.loads(line) for line in (tmp_path / 'no.jsonl').read_text(encoding='utf-8').splitlines()]
+    assert not any(r['is_spam_or_duplicate'] for r in plain)
+
+
+def test_batch_reused_ticket_id_keeps_the_result_and_flags_the_conflict(tmp_path):
+    import json
+    import subprocess
+    import sys
+    base = {'ticket_id': 'same', 'kind': 'report', 'reporter_hash': 'r', 'created_at': '2026-08-01T10:00:00'}
+    rows = [{**base, 'messages': [{'role': 'player', 'text': 'где автошкола'}]},
+            {**base, 'created_at': '2026-08-01T10:05:00', 'messages': [{'role': 'player', 'text': 'совсем другой вопрос'}]}]
+    source, out = tmp_path / 'in.jsonl', tmp_path / 'out.jsonl'
+    source.write_text(''.join(json.dumps(r, ensure_ascii=False) + '\n' for r in rows), encoding='utf-8')
+    subprocess.run([sys.executable, '-m', 'app.batch', '--input', str(source), '--output', str(out)], check=True, capture_output=True)
+    result = [json.loads(line) for line in out.read_text(encoding='utf-8').splitlines()]
+    assert all('error' not in r for r in result)
+    assert 'history_identity_conflict' in result[1]['reasons']

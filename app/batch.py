@@ -16,6 +16,7 @@ from .submission import to_submission
 from .classifier import CategoryClassifier
 
 
+HISTORY_AUTO_MAX_BYTES = 200 * 1024 * 1024
 TEXT_FIELDS = ('region', 'server_lang', 'rule_refs_raw', 'reporter_hash', 'reported_hash', 'reported_nick')
 ROLES = ('player', 'reported_player', 'admin')
 
@@ -77,7 +78,7 @@ def predict_lines(lines, service, format='submission', history=False):
     if not history:
         yield from _predict_lines(lines, service, format)
         return
-    from datetime import datetime
+    from datetime import datetime, timezone
     from .history import History
     from .dedupe import annotate_history
     source = list(lines)
@@ -89,10 +90,12 @@ def predict_lines(lines, service, format='submission', history=False):
         try:
             raw = json.loads(line)
             ts = datetime.fromisoformat(raw['created_at'].replace('Z', '+00:00'))
-            if ts.tzinfo is None or not isinstance(raw['ticket_id'], str) or not raw['ticket_id']:
-                raise ValueError('Missing timezone or identity')
-            allowed = {k: v for k, v in raw.items() if k in TriageRequest.model_fields}
-            request = TriageRequest.model_validate(allowed)
+            if ts.tzinfo is None:
+                # The export has no timezone; only differences matter, so treat all stamps as UTC.
+                ts = ts.replace(tzinfo=timezone.utc)
+            if not isinstance(raw['ticket_id'], str) or not raw['ticket_id']:
+                raise ValueError('Missing identity')
+            request = TriageRequest.model_validate(coerce_ticket(raw))
             ordered.append((ts.timestamp(), index, raw['ticket_id'], request))
         except (ValueError, KeyError, TypeError):
             outputs[index]['reasons'].append('history_metadata_missing_or_invalid')
@@ -102,7 +105,8 @@ def predict_lines(lines, service, format='submission', history=False):
             try:
                 annotate_history(outputs[index], request, store, ticket_id, timestamp)
             except ValueError:
-                outputs[index] = {'error': 'history_identity_conflict'}
+                # A reused ticket id must not cost the ticket its result; keep the triage and flag the conflict.
+                outputs[index]['reasons'].append('history_identity_conflict')
         yield from outputs
     finally:
         store.close()
@@ -124,7 +128,8 @@ def main() -> None:
     parser.add_argument("--rules", help="rules.json; default: GRAND_RULES_PATH, then ./rules.json, ./data/rules.json, ./handout/rules.json")
     parser.add_argument('--model', help='Trusted local model.joblib from scripts.train (optional)')
     parser.add_argument('--format', choices=['submission', 'internal'], default='submission')
-    parser.add_argument('--history', action='store_true', help='Chronological exact duplicate detection; buffers input')
+    parser.add_argument('--history', action=argparse.BooleanOptionalAction, default=None,
+                        help='Chronological duplicate detection (buffers the input in memory); default: on for inputs under 200 MB')
     args = parser.parse_args()
     classifier = CategoryClassifier.load(args.model) if args.model else None
     rules_path = find_rules(args.rules)
@@ -135,7 +140,8 @@ def main() -> None:
     out_opener = gzip.open if args.output.endswith(".gz") else open  # compressed output saves ~10x disk on large runs
     mode = "wt" if args.output.endswith(".gz") else "w"
     with opener(args.input, "rt", encoding="utf-8") as source, out_opener(args.output, mode, encoding="utf-8") as target:
-        for prediction in predict_lines(source, service, args.format, args.history):
+        use_history = args.history if args.history is not None else os.path.getsize(args.input) < HISTORY_AUTO_MAX_BYTES
+        for prediction in predict_lines(source, service, args.format, use_history):
             target.write(json.dumps(prediction, ensure_ascii=False) + "\n")
 
 
