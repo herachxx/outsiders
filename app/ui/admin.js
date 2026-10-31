@@ -110,8 +110,6 @@ async function http(path, { method = 'GET', body } = {}) {
 /* ---------- assistant status ---------- */
 const MODE = { demo: 'демо на условных правилах', rules: 'правила и шаблоны', 'rules+model': 'правила, шаблоны и обученная модель', manual: 'ручной режим' };
 function setServiceState(kind, text) {
-  const chip = $('#status-chip'); chip.dataset.state = kind;
-  $('#status-text').textContent = text || { ok: 'Помощник работает', warn: 'Помощник в ручном режиме', error: 'Нет связи с сервисом', loading: 'Проверяем помощника' }[kind];
   const banner = $('#banner');
   if (kind === 'warn') { banner.hidden = false; banner.className = 'banner'; banner.replaceChildren(h('span', { text: 'Правила игры не загружены, поэтому помощник не разбирает обращения. ' }), h('button', { type: 'button', class: 'link-btn', text: 'Загрузить rules.json', onclick: openHelp })); }
   else if (kind === 'error') { banner.hidden = false; banner.className = 'banner error'; banner.textContent = 'Нет связи с сервисом. Данные на экране могут быть устаревшими.'; }
@@ -386,7 +384,7 @@ document.addEventListener('keydown', event => {
 $$('dialog [data-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
 $$('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
 const openHelp = () => { renderLive(); refreshStatus(); $('#help-dialog').showModal(); };
-$('#open-help').addEventListener('click', openHelp); $('#status-chip').addEventListener('click', openHelp); $('#selftest').addEventListener('click', runSelftest);
+$('#open-help').addEventListener('click', openHelp); $('#selftest').addEventListener('click', runSelftest);
 $('#rules-pick').addEventListener('click', () => $('#rules-file').click());
 $('#rules-file').addEventListener('change', async event => {
   const file = event.target.files[0]; event.target.value = ''; if (!file) return;

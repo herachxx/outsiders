@@ -19,7 +19,7 @@ def test_ui_assets_are_served_without_external_resources(monkeypatch):
         assert client.post('/admin/api/login', json={'password':'test-password-secure-123'}).status_code == 200
         admin = client.get('/admin').text
         assert 'Ответ игроку' in admin and 'Что понял помощник' in admin
-        assert 'id="toasts"' in admin and 'id="status-chip"' in admin
+        assert 'id="toasts"' in admin
         assert 'href="/"' in admin and 'Страница игрока' in admin
         assert 'Панель оператора' in page.text and 'href="/admin"' in page.text
         assert 'src="https://' not in page.text

@@ -24,7 +24,7 @@ def test_player_languages_are_selectable_and_have_localized_labels():
 def test_operator_panel_is_one_ticket_view_with_visible_assistant_state():
     html = (BASE / 'admin.html').read_text(encoding='utf-8')
     js = (BASE / 'admin.js').read_text(encoding='utf-8')
-    for ident in ('status-chip', 'open-help', 'selftest', 'next-step', 'send', 'check', 'save', 'escalate', 'to-player', 'queue-empty'):
+    for ident in ('open-help', 'selftest', 'next-step', 'send', 'check', 'save', 'escalate', 'to-player', 'queue-empty'):
         assert f'id="{ident}"' in html
     for tab in ('case', 'reply', 'files', 'history'):
         assert f'id="tab-{tab}"' in html and f'id="panel-{tab}"' in html
