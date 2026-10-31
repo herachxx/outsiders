@@ -237,17 +237,30 @@ class TicketStore:
         if not conn.execute('SELECT 1 FROM tickets WHERE id=?',(ticket_id,)).fetchone():raise Missing()
         raise Conflict('Обращение изменилось. Обновите его перед сохранением.')
 
-    def add_attachment(self,ticket_id: str, path: str, content_type: str, size: int) -> dict:
+    def add_attachment(self,ticket_id: str, path: str, content_type: str, size: int, refresh) -> dict:
         attachment_id='ATT-'+secrets.token_hex(10)
         ext='.jpg' if content_type=='image/jpeg' else '.png'
         with self.connect() as conn:
-            if not conn.execute('SELECT 1 FROM tickets WHERE id=?',(ticket_id,)).fetchone():raise Missing()
-            if conn.execute('SELECT COUNT(*) FROM attachments WHERE ticket_id=?',(ticket_id,)).fetchone()[0]>=4:
+            conn.execute('BEGIN IMMEDIATE')
+            row = conn.execute('SELECT * FROM tickets WHERE id=?',(ticket_id,)).fetchone()
+            if not row:raise Missing()
+            if row['status'] in ('resolved', 'closed'):
+                raise Conflict('Сначала откройте обращение повторно для добавления материалов.')
+            count = conn.execute('SELECT COUNT(*) FROM attachments WHERE ticket_id=?',(ticket_id,)).fetchone()[0]
+            if count>=4:
                 raise Conflict('Не более четырёх вложений для одного обращения.')
+            request = json.loads(row['request_json'])
+            request['images_count'] = count + 1
+            result = refresh(request)
+            previous = json.loads(row['result_json']).get('draft_reply', {}).get('text', '')
+            draft = result['draft_reply']['text'] if row['draft_text'] == previous else row['draft_text']
             conn.execute('INSERT INTO attachments(id,ticket_id,created_at,filename,content_type,size,path) VALUES (?,?,?,?,?,?,?)',
                          (attachment_id,ticket_id,utc(),'screenshot'+ext,content_type,size,path))
+            conn.execute('''UPDATE tickets SET request_json=?,result_json=?,draft_text=?,draft_approved=0,
+                version=version+1,updated_at=? WHERE id=?''',
+                (json.dumps(request,ensure_ascii=False),json.dumps(result,ensure_ascii=False),draft,utc(),ticket_id))
             self._audit(conn,ticket_id,'player','attachment_added',{'attachment_id':attachment_id,'size':size})
-        return {'id':attachment_id,'filename':'screenshot'+ext,'content_type':content_type,'size':size}
+        return {'id':attachment_id,'filename':'screenshot'+ext,'content_type':content_type,'size':size,'result':result}
 
     def list_attachments(self,ticket_id: str) -> list[dict]:
         self.get(ticket_id)

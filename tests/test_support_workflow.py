@@ -138,6 +138,11 @@ def test_screenshot_private_upload_with_metadata_removed(client, tmp_path):
     assert image['id'].startswith('ATT-')
     assert client.get(f"/admin/api/tickets/{ticket['id']}/attachments").status_code==401
     headers=login(client)
+    detail=client.get(f"/admin/api/tickets/{ticket['id']}").json()
+    assert detail['request']['images_count']==1
+    assert detail['result']['extracted']['has_evidence'] is True
+    assert detail['version']==2
+    assert not detail['draft_approved']
     attachments=client.get(f"/admin/api/tickets/{ticket['id']}/attachments").json()
     assert len(attachments['items'])==1
     download=client.get(f"/admin/api/tickets/{ticket['id']}/attachments/{image['id']}")
@@ -180,3 +185,29 @@ def test_security_headers(client):
     assert response.headers['x-frame-options']=='DENY'
     assert response.headers['x-content-type-options']=='nosniff'
     assert "script-src 'self'" in response.headers['content-security-policy']
+
+
+def test_selected_but_not_uploaded_files_are_not_evidence(client):
+    response=client.post('/support/tickets',json={'request':{'kind':'report','images_count':4,
+        'messages':[{'role':'player','text':'Ошибка графики','attachments':4}]}})
+    assert response.status_code==201
+    assert response.json()['result']['extracted']['has_evidence'] is False
+
+
+def test_attachment_preserves_edits_invalidates_approval_and_rejects_closed(tmp_path):
+    store=TicketStore(str(tmp_path/'files.db'))
+    service=TriageService(RuleIndex.from_data(RULES))
+    req={'kind':'report','messages':[{'role':'player','text':'Ошибка графики'}]}
+    item,_=store.create(req,service.triage(req))
+    item=store.edit_draft(item['id'],item['version'],'Правка оператора','operator')
+    item=store.approve_draft(item['id'],item['version'],'operator')
+    store.add_attachment(item['id'],'synthetic.png','image/png',1,service.triage)
+    changed=store.get(item['id'])
+    assert changed['draft_text']=='Правка оператора'
+    assert not changed['draft_approved'] and changed['version']==item['version']+1
+    with pytest.raises(Conflict):store.approve_draft(item['id'],item['version'],'operator')
+    changed=store.set_status(changed['id'],changed['version'],'in_review','operator')
+    changed=store.approve_draft(changed['id'],changed['version'],'operator')
+    changed=store.set_status(changed['id'],changed['version'],'resolved','operator')
+    with pytest.raises(Conflict):store.add_attachment(item['id'],'second.png','image/png',1,service.triage)
+    assert len(store.list_attachments(item['id']))==1

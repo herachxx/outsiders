@@ -98,6 +98,9 @@ def create_routes(service, store: TicketStore):
         data=payload.request
         if len(data.messages)!=1 or data.messages[0].role!='player' or not data.messages[0].text.strip():
             raise HTTPException(422,'One nonempty player message required')
+        # The portal uploads files after ticket creation; selected files are not yet evidence.
+        data = data.model_copy(update={'images_count': 0, 'messages': [
+            message.model_copy(update={'attachments': 0}) for message in data.messages]})
         # This is a synthetic service, not an official Grand Mobile delivery.
         result=service.triage(data) if service.rules.rules else safe_fallback(payload.topic)
         if data.kind=='complaint' or result['category'] in ('report.payment','report.account','complaint.admin'):
@@ -112,7 +115,7 @@ def create_routes(service, store: TicketStore):
 
     async def upload(ticket_id: str, file: UploadFile = File(...), x_ticket_token: str | None = Header(default=None)):
         if not x_ticket_token:raise HTTPException(404,'Ticket not found')
-        try:store.public_get(ticket_id,x_ticket_token)
+        try:source_ticket=store.public_get(ticket_id,x_ticket_token)
         except Missing:raise HTTPException(404,'Ticket not found') from None
         try:
             from PIL import Image, ImageOps, UnidentifiedImageError
@@ -141,7 +144,14 @@ def create_routes(service, store: TicketStore):
         try:
             with path.open('xb') as f:f.write(clean)
             os.chmod(path,0o600)
-            return store.add_attachment(ticket_id,str(path),media_type,len(clean))
+            def refresh_attachment(data):
+                from copy import deepcopy
+                result = service.triage(data) if service.rules.rules else deepcopy(source_ticket['result'])
+                result['extracted']['has_evidence'] = data['images_count'] > 0
+                if data['kind'] == 'complaint':
+                    result['needs_human'] = True
+                return result
+            return store.add_attachment(ticket_id,str(path),media_type,len(clean),refresh_attachment)
         except (Conflict,Missing) as exc:
             path.unlink(missing_ok=True)
             raise HTTPException(409 if isinstance(exc,Conflict) else 404,str(exc)) from None

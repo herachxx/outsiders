@@ -73,11 +73,12 @@ async function submit(event){
  try{
   const response=await fetch('/support/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request,topic:selectedCategory})});
   if(!response.ok){if(response.status===503)throw new Error('Сервис временно недоступен.');if(response.status===409)throw new Error('Такое обращение уже зарегистрировано за последний час.');if(response.status===422)throw new Error('Проверь длину и содержание сообщения.');throw new Error('Не удалось получить ответ. Попробуй повторить запрос.');}
-  const ticket=await response.json();const result=ticket.result;
+  const ticket=await response.json();let result=ticket.result;
   showAnswer(result,performance.now()-started,selectedCategory);
   if(ticket.status==='closed'){$('answer-badge').textContent=window.GrandI18n?.tr('Решено')||'Решено';}
   let uploaded=0;let uploadFailed=0;
-  for(const file of files){const formData=new FormData();formData.append('file',file);try{const r=await fetch(`/support/tickets/${encodeURIComponent(ticket.id)}/attachments`,{method:'POST',headers:{'X-Ticket-Token':ticket.access_token},body:formData});if(r.ok)uploaded++;else uploadFailed++;}catch{uploadFailed++;}}
+  for(const file of files){const formData=new FormData();formData.append('file',file);try{const r=await fetch(`/support/tickets/${encodeURIComponent(ticket.id)}/attachments`,{method:'POST',headers:{'X-Ticket-Token':ticket.access_token},body:formData});if(r.ok){const attachment=await r.json();result=attachment.result;uploaded++;}else uploadFailed++;}catch{uploadFailed++;}}
+  if(uploaded)showAnswer(result,performance.now()-started,selectedCategory);
   status.textContent=`${window.GrandI18n?.tr('Обращение')||'Обращение'} ${ticket.id} · ${window.GrandI18n?.tr('Сохранено')||'Сохранено'}${uploadFailed?` · ${window.GrandI18n?.tr('Не загружено вложений')||'Не загружено вложений'}: ${uploadFailed}`:''}.`;
   const item={id:ticket.id,accessToken:ticket.access_token,status:ticket.status==='closed'?'Закрыто':'Новое',text:raw,category:cat.label,categoryKey:selectedCategory,time:Date.now(),answer:result.draft_reply.text,needsHuman:!!result.needs_human,result};
   recent.push(item);recent=recent.slice(-15);storeRecent();$('screenshot-files').value='';$('file-count').textContent='Файлы не выбраны';
