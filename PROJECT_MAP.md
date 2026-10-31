@@ -152,3 +152,5 @@ E2: scripts/benchmark.py, tests/test_benchmark.py, docs/performance.md. Выпо
 E3 технически готов: requirements-lock.txt, grand-predict entrypoint, scripts/run.ps1, Makefile, docs/submission.md. Wheel установлен в чистый venv ../private/e3-env; импорт/шаблоны/API smoke, 1000 valid CLI и runner без ошибок. 108 тестов; pip check OK. Make недоступен, другая машина не проверена. Следующий возможный этап — E1, локальный интерфейс администратора; качество всё ещё ждёт разметки и экспертных оценок.
 
 E1: app/ui/index.html, style.css, app.js; POST /draft/check в api.py. Локальная очередь p0–p3, исходник/цитаты/reasons, редактор, localStorage по кнопке, локальная метка эскалации. tests/test_ui.py, docs/ui.md. 111 тестов, JS syntax, wheel assets проверены; браузерная проверка заблокирована средой. Следующий шаг — ручная проверка UI и завершение разметки/оценок; optional E1b (FAQ) ещё нет.
+
+HTTP-дополнение E2: `scripts/benchmark_http.py`, `tests/test_benchmark_http.py`. Локальный HTTP-прогон синтетики 1000 запросов × 1/5/20 потоков; p95 27,4/34,3/79,0 мс без ошибок. Подробности `docs/performance.md`; финальная конфигурация и реальные тексты не измерены.
