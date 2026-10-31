@@ -275,3 +275,24 @@ def test_admin_complaints_and_appeals_cite_the_filing_rule_about_punishment_scre
     assert result["category"] == "complaint.admin" and result["needs_human"]
     assert [(c["section_id"], c["ref"]) for c in result["draft_reply"]["cited"]] == [(31, "1.3.1")]
     assert "скриншот" in result["draft_reply"]["text"] and not any(r.startswith("safety_") for r in result["reasons"])
+
+
+def test_green_zone_dm_cites_the_green_zone_rule_only_inside_the_zone():
+    rules = {"rules": RULES["rules"] + [{"id": 32, "category": "Зелёная зона", "points": [
+        {"ref": "1.1", "text": "Запрещены убийства, а также нанесение урона в Зелёной Зоне [GZ]."}]}]}
+    service = TriageService(RuleIndex.from_data(rules))
+    inside = service.triage(ticket("убил меня в зз возле больницы", images_count=1))
+    assert inside["category"] == "complaint.dm"
+    assert [(c["section_id"], c["ref"]) for c in inside["draft_reply"]["cited"]] == [(32, "1.1")]
+    outside = service.triage(ticket("убил меня на трассе без причины", images_count=1))
+    assert outside["category"] == "complaint.dm" and outside["draft_reply"]["cited"] == []
+    assert not any(r.startswith("safety_") for r in inside["reasons"] + outside["reasons"])
+
+
+def test_claimed_dm_point_still_uses_topic_search_next_to_green_zone_special_case():
+    rules = {"rules": RULES["rules"] + [{"id": 30, "category": "Общие", "points": []}]}
+    data = {"rules": [{"id": 30, "category": "Общие правила", "points": [
+        {"ref": "5.4", "text": "Запрещено убийство или нанесение урона жильцам у входа в дом."}]}]}
+    service = TriageService(RuleIndex.from_data(data))
+    result = service.triage(ticket("убил меня у дома", images_count=1, rule_refs_raw="5.4"))
+    assert [(c["section_id"], c["ref"]) for c in result["draft_reply"]["cited"]] == [(30, "5.4")]

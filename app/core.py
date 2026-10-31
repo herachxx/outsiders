@@ -46,6 +46,8 @@ def category_rule_ref(category: str, text: str) -> str | None:
         return '2.1'
     if category == 'complaint.admin':
         return '1.3.1'
+    if category == 'complaint.dm':
+        return '1.1' if re.search(r'зз|зел[её]н|gz|гз|больниц', text) else None
     if category == 'complaint.cheat':
         return '5.2'
     if category == 'complaint.scam':

@@ -16,6 +16,7 @@ TOPICS = {
 FILING_POINTS = {  # complaint-filing rules (section "Правила жалоб"), matched by wording
     'complaint.invalid': {'1.2.3': r'описани', '1.3.4': r'общие формулировк'},
     'complaint.admin': {'1.3.1': r'скриншот наказани'},
+    'complaint.dm': {'1.1': r'убийства.{0,60}зел[её]н'},  # green-zone section
 }
 
 
@@ -94,8 +95,8 @@ class RuleIndex:
         return ranked[:limit]
 
     def relevant_rule(self, text, category, ref):
-        if category in FILING_POINTS:
-            pattern = FILING_POINTS[category].get(ref)
+        if ref in FILING_POINTS.get(category, {}):
+            pattern = FILING_POINTS[category][ref]
             matches = [rule for rule in self.rules if pattern and rule.ref == ref and re.search(pattern, rule.text.casefold())]
             return matches[0] if len(matches) == 1 else None
         candidates = self.search(text, category, ref=ref, limit=len(self.rules))
