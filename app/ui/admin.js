@@ -410,14 +410,6 @@ $('#new-form').addEventListener('submit', async event => {
     toast('Обращение создано. Помощник разобрал его' + (ticket.result.meta ? ' за ' + String(ticket.result.meta.ms).replace('.', ',') + ' мс.' : '.'), 'ok');
   } catch (error) { toast(error.message, 'error'); } finally { submit.disabled = false; submit.removeAttribute('aria-busy'); }
 });
-/* theme */
-function applyTheme(theme) { if (theme) document.documentElement.dataset.theme = theme; else delete document.documentElement.dataset.theme;
-  const dark = theme === 'dark'; $('#theme use').setAttribute('href', dark ? '#i-sun' : '#i-moon'); }
-let savedTheme = null; try { savedTheme = localStorage.getItem('grand-theme'); } catch { /* storage may be blocked */ }
-applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
-$('#theme').addEventListener('click', () => { const dark = document.documentElement.dataset.theme === 'dark';
-  const next = dark ? 'light' : 'dark'; applyTheme(next); try { localStorage.setItem('grand-theme', next); } catch { /* ignore */ } });
-
 (async function start() {
   try {
     const session = await http('/admin/api/session'); state.csrf = session.csrf;
