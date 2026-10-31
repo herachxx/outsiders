@@ -50,3 +50,19 @@ def test_api_key_is_enforced_when_configured(monkeypatch):
 def test_no_rules_means_unavailable():
     unavailable = TestClient(create_app(TriageService(RuleIndex([]))))
     assert unavailable.post('/integration/ticket', json=RECORD).status_code == 503
+
+
+def test_batch_cli_reads_and_writes_gzip(tmp_path):
+    import gzip
+    import json
+    import subprocess
+    import sys
+    source, rules, out = tmp_path / 'in.jsonl.gz', tmp_path / 'rules.json', tmp_path / 'out.jsonl.gz'
+    with gzip.open(source, 'wt', encoding='utf-8') as f:
+        f.write(json.dumps({'kind': 'report', 'messages': [{'role': 'player', 'text': 'где автошкола?'}]}) + '\n')
+        f.write('not json\n')
+    rules.write_text(json.dumps(RULES), encoding='utf-8')
+    subprocess.run([sys.executable, '-m', 'app.batch', '--input', str(source), '--output', str(out),
+                    '--rules', str(rules)], check=True, capture_output=True)
+    rows = [json.loads(line) for line in gzip.open(out, 'rt', encoding='utf-8')]
+    assert len(rows) == 2 and rows[0]['category'] == 'report.question' and rows[1] == {'error': 'invalid_input'}

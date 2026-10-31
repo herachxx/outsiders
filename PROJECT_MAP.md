@@ -182,3 +182,5 @@ E2: `scripts/benchmark_process.py`, `tests/test_benchmark_process.py` — отд
 Приоритет и человек (исправлено): у каждой жалобы в train есть вложение (лаунчер требует), поэтому правило «вложения → p1» превращало все жалобы в p1; оно удалено. `needs_human` теперь по taxonomy: account, payment, complaint.admin, report.help, апелляции и p0; раньше был у всех жалоб. На holdout B1 (метки Claude): accuracy приоритета 0,30→0,87, macro-F1 0,30→0,85, recall p1 0,88, p3 0,80; p0 в holdout нет. `language_uncertain` всё ещё отправляет человеку любое обращение при эвристическом детекторе.
 
 Соответствие критериям жюри и ограничения оценки — `docs/criteria.md`.
+
+Полосы обработки: `app/handling.py` (auto/review/escalate в `reasons`, `handling` в `/integration/ticket`), журнал решений администрации `app/decisions.py` (`GRAND_DECISIONS_PATH`, `POST /integration/decision`, `GET /integration/decisions/stats`), тесты `tests/test_handling.py`; batch поддерживает `.gz` на выходе. Описание — `docs/integration.md`.

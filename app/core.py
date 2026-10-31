@@ -9,6 +9,7 @@ from .preprocess import before_admin, player_text as extract_player_text, normal
 from .language import detect, language
 from .facts import extract_facts
 from .confidence import lookup
+from .handling import decide
 from .draft import build_draft
 from .safety import check_draft
 
@@ -113,6 +114,7 @@ class TriageService:
         reasons.extend(safety_reasons)
         if safety_reasons:
             needs_human = True
+        reasons.append('handling_' + decide(category, priority, needs_human, confidence, reasons, MANDATORY_HUMAN))
         return {
             "lang": lang,
             "category": category,

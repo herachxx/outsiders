@@ -82,7 +82,9 @@ def main() -> None:
     classifier = CategoryClassifier.load(args.model) if args.model else None
     service = TriageService(RuleIndex.from_file(args.rules), classifier)
     opener = gzip.open if args.input.endswith(".gz") else open
-    with opener(args.input, "rt", encoding="utf-8") as source, open(args.output, "w", encoding="utf-8") as target:
+    out_opener = gzip.open if args.output.endswith(".gz") else open  # compressed output saves ~10x disk on large runs
+    mode = "wt" if args.output.endswith(".gz") else "w"
+    with opener(args.input, "rt", encoding="utf-8") as source, out_opener(args.output, mode, encoding="utf-8") as target:
         for prediction in predict_lines(source, service, args.format, args.history):
             target.write(json.dumps(prediction, ensure_ascii=False) + "\n")
 
