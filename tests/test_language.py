@@ -22,3 +22,15 @@ def test_model_threshold_and_unsupported_language():
     assert detect('please help me', Model('__label__en', [.95, .04])).lang == 'en'
     assert detect('please help me', Model('__label__en', [.6, .4])).lang == 'und'
     assert detect('please help me', Model('__label__de', [.95, .04])).lang == 'und'
+
+
+def test_clear_text_is_confident_and_ambiguous_scripts_stay_uncertain():
+    assert not detect('Он меня оскорбил в общем чате без причины').uncertain
+    assert detect('Он меня оскорбил в общем чате без причины').lang == 'ru'
+    assert not detect('Маған көмек керек, аккаунтқа кіре алмаймын').uncertain
+    uz = detect('onam haqorat qilib meni sababsiz otib ketdi')
+    assert uz.lang == 'uz' and not uz.uncertain
+    assert detect('Hello, please help me with the car').lang == 'en'
+    assert detect('адмін розверни мене пожалуста').uncertain          # Ukrainian/і-only
+    assert detect('sk <url>').lang == 'und'                            # rule code, no language signal
+    assert detect('Miras_Baranov52 деген не үшін бан').lang == 'kk'    # nickname ignored

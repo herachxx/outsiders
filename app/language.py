@@ -14,6 +14,17 @@ class LanguageDecision:
     mixed: bool = False
 
 
+UZ_LATIN_WORDS = {
+    'salom', 'iltimos', 'yordam', 'bering', 'hisobim', 'uchun', 'qanday', 'chora', 'korila', 'sokdi', 'sokib',
+    'onadan', 'haqorat', 'sababsiz', 'sabab', 'menga', 'meni', 'mani', 'manga', 'bilan', 'qilib', 'otib', 'ketdi',
+    'kishanladi', 'moshina', 'qurol', 'edim', 'ekan', 'nima', 'noroziman', 'jazo', 'qilyabdi', 'qildi', 'bogan'}
+EN_WORDS = {'help', 'please', 'the', 'is', 'my', 'you', 'what', 'how', 'hello', 'where', 'this', 'not', 'and', 'with',
+            'was', 'for', 'to', 'me', 'he', 'his', 'it', 'on', 'do', 'i'}
+UZ_CYRILLIC_WORDS = {'билан', 'учун', 'килиб', 'қилиб', 'гаплашиш', 'ёрдам', 'илтимос', 'йўқ', 'уйинчилар', 'тахдид'}
+# Rule codes and nicknames carry no language signal.
+NOISE = re.compile(r"\b(?:gz|op|dm|sk|tk|db|fw|rp|nrp|orp|url|digits|handle|ck)\b|\b\w+_\w+\b")
+
+
 @lru_cache(maxsize=1)
 def load_model(path):
     import fasttext
@@ -22,6 +33,7 @@ def load_model(path):
 
 def detect(text, model=None):
     text = re.sub(r'https?://\S+|\b\d+(?:\.\d+)*\b', ' ', text.casefold())
+    text = NOISE.sub(' ', text)
     text = text.translate(str.maketrans({'’': "'", 'ʻ': "'", 'ʼ': "'", '`': "'"}))
     latin = len(re.findall('[a-z]', text))
     cyrillic = len(re.findall('[а-яёәіңғүұқөһўҳ]', text))
@@ -39,23 +51,35 @@ def detect(text, model=None):
         if lang in SUPPORTED and scores[0] >= .8 and (len(scores) == 1 or scores[0] - scores[1] >= .2):
             return LanguageDecision(lang, False)
         return LanguageDecision('und', True)
-    # Shared letters қ/ғ alone cannot distinguish Kazakh from Uzbek.
-    kazakh = bool(re.search('[әіңүұөһ]', text))
+    # Shared letters қ/ғ alone cannot distinguish Kazakh from Uzbek; і is also Ukrainian/Belarusian.
+    kazakh_letters = re.findall('[әңүұөһ]', text)
     uzbek = bool(re.search('[ўҳ]', text))
-    if kazakh and uzbek:
+    if kazakh_letters and uzbek:
         return LanguageDecision('und', True, True)
-    if kazakh:
-        return LanguageDecision('kk', True)
+    if kazakh_letters:
+        return LanguageDecision('kk', len(kazakh_letters) < 2 and cyrillic < 20)
+    if re.search('[їєґ]', text) or ('і' in text and not re.search('[ыэъ]', text)):
+        # Ukrainian/Belarusian (and і-only Kazakh) cannot be told apart from Russian by letters alone.
+        return LanguageDecision('und', True)
     if uzbek:
-        return LanguageDecision('uz', True)
+        return LanguageDecision('uz', False)
+    if re.search('[їєґ]', text):
+        return LanguageDecision('und', True)
     if latin >= cyrillic * 2:
         tokens = set(re.findall("[a-z']+", text))
-        if len(tokens & {'salom', 'iltimos', 'yordam', 'bering', 'hisobim', 'uchun', 'qanday'}) >= 2:
-            return LanguageDecision('uz', True)
+        uz_hits = len(tokens & UZ_LATIN_WORDS) + (1 if re.search("[og][ʻʼ'`‘’]", text) else 0)
+        if uz_hits >= 1 and len(tokens & EN_WORDS) <= uz_hits:
+            return LanguageDecision('uz', uz_hits < 2)
+        if len(tokens & EN_WORDS) >= 2:
+            return LanguageDecision('en', False)
         return LanguageDecision('lat', True)
     if re.search('[қғ]', text):
         return LanguageDecision('und', True)
-    return LanguageDecision('ru', True)
+    words = set(re.findall('[а-яёіқғ]+', text))
+    if words & UZ_CYRILLIC_WORDS:
+        return LanguageDecision('uz', True)
+    # Plain Russian letters only: trust a sentence-sized text, keep short fragments uncertain.
+    return LanguageDecision('ru', cyrillic < 8)
 
 
 def language(text):

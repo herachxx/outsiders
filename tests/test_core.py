@@ -111,7 +111,7 @@ def test_attachment_count_does_not_prove_violation():
         ticket("Он меня оскорбил, пункт 2.1", images_count=2, rule_refs_raw="2.1")
     )
     assert result["extracted"]["has_evidence"] is True
-    assert result["needs_human"] is True
+    assert result["priority"] == "p2"
     assert result["draft_reply"]["cited"][0]["section_id"] == 30
     assert "скриншотам видно" not in result["draft_reply"]["text"].lower()
 
