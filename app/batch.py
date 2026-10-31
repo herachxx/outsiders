@@ -3,6 +3,8 @@
 import argparse
 import gzip
 import json
+import os
+import sys
 from collections.abc import Iterable, Iterator
 
 from pydantic import ValidationError
@@ -106,17 +108,29 @@ def predict_lines(lines, service, format='submission', history=False):
         store.close()
 
 
+def find_rules(explicit=None):
+    """Explicit path (must exist), else GRAND_RULES_PATH, else a rules.json next to the working directory."""
+    if explicit:
+        return explicit
+    candidates = [os.environ.get("GRAND_RULES_PATH"), "rules.json", "data/rules.json", "handout/rules.json",
+                  "../handout/rules.json", "../rules.json"]
+    return next((c for c in candidates if c and os.path.isfile(c)), None)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Predict one JSON object for every JSONL row")
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--rules", required=True)
+    parser.add_argument("--rules", help="rules.json; default: GRAND_RULES_PATH, then ./rules.json, ./data/rules.json, ./handout/rules.json")
     parser.add_argument('--model', help='Trusted local model.joblib from scripts.train (optional)')
     parser.add_argument('--format', choices=['submission', 'internal'], default='submission')
     parser.add_argument('--history', action='store_true', help='Chronological exact duplicate detection; buffers input')
     args = parser.parse_args()
     classifier = CategoryClassifier.load(args.model) if args.model else None
-    service = TriageService(RuleIndex.from_file(args.rules), classifier)
+    rules_path = find_rules(args.rules)
+    if rules_path is None:
+        print("warning: rules.json not found, drafts will have no rule citations", file=sys.stderr)
+    service = TriageService(RuleIndex.from_file(rules_path) if rules_path else RuleIndex([]), classifier)
     opener = gzip.open if args.input.endswith(".gz") else open
     out_opener = gzip.open if args.output.endswith(".gz") else open  # compressed output saves ~10x disk on large runs
     mode = "wt" if args.output.endswith(".gz") else "w"

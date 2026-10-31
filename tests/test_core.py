@@ -202,3 +202,11 @@ def test_appeals_police_abuse_empty_tickets_and_uz_words_are_routed():
     }
     for text, expected in cases.items():
         assert service.triage(ticket(text))["category"] == expected, text
+
+
+def test_short_in_game_report_forms():
+    service = TriageService(RuleIndex.from_data(RULES))
+    cases = {"435 дб": "report.complaint", "128 нрп гос": "report.complaint", "тп на бв адамс": "report.help",
+             "связали без причины без рп": "report.complaint", "спавн": "report.offtopic"}
+    for text, expected in cases.items():
+        assert service.triage(ticket(text, kind="report"))["category"] == expected, text

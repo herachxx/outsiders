@@ -11,7 +11,7 @@ if ($Action -eq 'test') {
     & $Python -m pytest -q
     exit $LASTEXITCODE
 }
-if (-not $Rules) { throw 'Specify -Rules or GRAND_RULES_PATH.' }
+if (-not $Rules -and $Action -eq 'serve') { throw 'Specify -Rules or GRAND_RULES_PATH.' }
 if ($Action -eq 'serve') {
     $env:GRAND_RULES_PATH = $Rules
     if ($Model) { $env:GRAND_MODEL_PATH = $Model }
@@ -19,7 +19,8 @@ if ($Action -eq 'serve') {
 } else {
     if (-not $InputPath -or -not $OutputPath) { throw 'Specify -InputPath and -OutputPath.' }
     if (Test-Path -LiteralPath $OutputPath) { throw 'Output already exists; refusing overwrite.' }
-    $batchArgs = @('-m', 'app.batch', '--input', $InputPath, '--output', $OutputPath, '--rules', $Rules)
+    $batchArgs = @('-m', 'app.batch', '--input', $InputPath, '--output', $OutputPath)
+    if ($Rules) { $batchArgs += @('--rules', $Rules) }
     if ($Model) { $batchArgs += @('--model', $Model) }
     & $Python @batchArgs
 }

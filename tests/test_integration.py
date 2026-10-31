@@ -66,3 +66,24 @@ def test_batch_cli_reads_and_writes_gzip(tmp_path):
                     '--rules', str(rules)], check=True, capture_output=True)
     rows = [json.loads(line) for line in gzip.open(out, 'rt', encoding='utf-8')]
     assert len(rows) == 2 and rows[0]['category'] == 'report.question' and rows[1] == {'error': 'invalid_input'}
+
+
+def test_batch_finds_rules_next_to_working_directory_or_runs_without(tmp_path):
+    import json
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    env = {**os.environ, 'PYTHONPATH': str(Path(__file__).resolve().parent.parent)}
+    env.pop('GRAND_RULES_PATH', None)
+    source = tmp_path / 'in.jsonl'
+    source.write_text(json.dumps({'kind': 'complaint', 'messages': [{'role': 'player', 'text': 'оск родни'}]},
+                                 ensure_ascii=False) + '\n', encoding='utf-8')
+    run = lambda out: subprocess.run([sys.executable, '-m', 'app.batch', '--input', str(source), '--output', str(out)],
+                                     cwd=tmp_path, env=env, capture_output=True, text=True, check=True)
+    without = run(tmp_path / 'a.jsonl')
+    assert 'rules.json not found' in without.stderr
+    assert json.loads((tmp_path / 'a.jsonl').read_text(encoding='utf-8'))['draft_reply']['cited'] == []
+    (tmp_path / 'rules.json').write_text(json.dumps(RULES), encoding='utf-8')
+    run(tmp_path / 'b.jsonl')
+    assert json.loads((tmp_path / 'b.jsonl').read_text(encoding='utf-8'))['draft_reply']['cited'] == ['2.1']

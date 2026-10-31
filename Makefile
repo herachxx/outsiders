@@ -4,7 +4,7 @@ MODEL ?= $(GRAND_MODEL_PATH)
 
 .PHONY: predict test serve
 predict:
-	$(PYTHON) -m app.batch --input "$(IN)" --output "$(OUT)" --rules "$(RULES)" $(if $(MODEL),--model "$(MODEL)",)
+	$(PYTHON) -m app.batch --input "$(IN)" --output "$(OUT)" $(if $(RULES),--rules "$(RULES)",) $(if $(MODEL),--model "$(MODEL)",)
 
 test:
 	$(PYTHON) -m pytest -q
