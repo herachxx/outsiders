@@ -29,7 +29,7 @@ function select(item) {
   $('empty').hidden=true;$('ticket').hidden=false;
   $('category').textContent=item.result.category;
   $('priority').textContent=item.result.priority.toUpperCase();$('priority').dataset.level=item.result.priority;
-  $('metadata').textContent='Язык: '+item.result.lang+' · Вложений: '+item.request.images_count+' · '+(item.escalated?'Отмечено для старшего':item.result.needs_human?'Требуется проверка человеком':'Черновик готов к проверке');
+  $('metadata').textContent='Язык: '+item.result.lang+' · Вложений: '+item.request.images_count+' · '+(item.escalated?'Отмечено для старшего':item.result.needs_human?'Требуется проверка человеком':'Черновик готов к проверке')+' · Полоса: '+({auto:'можно ответить автоматически',review:'проверка администратором',escalate:'решает администратор'}[(item.result.reasons.find(r=>r.startsWith('handling_'))||'').slice(9)]||'проверка администратором');
   $('original').textContent=item.request.messages[0].text;
   list('claims',item.result.extracted.claims);list('reasons',item.result.reasons);
   $('citations').replaceChildren();
