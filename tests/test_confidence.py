@@ -31,3 +31,30 @@ def test_confidence_can_be_disabled_and_is_zero_on_safety_override():
             return 'report.question'
     result = TriageService(RuleIndex([]), classifier=WrongModel()).triage(ticket('аккаунт украли', kind='report'))
     assert result['confidence'] == 0.0
+
+
+def test_empirical_confidence_does_not_claim_model_calibration(monkeypatch):
+    import app.core as core
+    monkeypatch.setattr(core, 'lookup', lambda source, category: .75)
+    class Model:
+        def predict(self, kind, text):
+            return 'report.question'
+    result = TriageService(RuleIndex([]), Model()).triage(ticket('где магазин', kind='report'))
+    assert result['confidence'] == .75
+    assert 'confidence_empirical' in result['reasons']
+    assert 'classifier_uncalibrated' in result['reasons']
+    assert 'classifier_calibrated' not in result['reasons']
+
+
+def test_calibrated_probability_keeps_its_source(monkeypatch):
+    import app.core as core
+    monkeypatch.setattr(core, 'lookup', lambda *args: (_ for _ in ()).throw(AssertionError('Unexpected lookup')))
+    class Model:
+        def predict(self, kind, text):
+            return 'report.question'
+        def confidence(self, kind, text):
+            return .9
+    result = TriageService(RuleIndex([]), Model()).triage(ticket('где магазин', kind='report'))
+    assert result['confidence'] == .9
+    assert 'classifier_calibrated' in result['reasons']
+    assert 'confidence_empirical' not in result['reasons']

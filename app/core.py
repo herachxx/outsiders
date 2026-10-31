@@ -73,11 +73,14 @@ class TriageService:
         confidence = 0.0
         if predicted and not safety_override and hasattr(self.classifier, 'confidence'):
             confidence = self.classifier.confidence(request.kind, search_text)
+        model_calibrated = bool(confidence)
         if not confidence and not safety_override and self.empirical_confidence:
             source = 'model' if predicted else ('rule' if rule_decided else 'heuristic')
             confidence = lookup(source, category)
+            if confidence:
+                reasons.append('confidence_empirical')
         if self.classifier:
-            reasons.append(('classifier_calibrated' if confidence else 'classifier_uncalibrated') if predicted else 'classifier_fallback')
+            reasons.append(('classifier_calibrated' if model_calibrated else 'classifier_uncalibrated') if predicted else 'classifier_fallback')
         if safety_override:
             reasons.append('sensitive_category_override')
         if language_decision.uncertain:
@@ -123,7 +126,7 @@ class TriageService:
             },
             "draft_reply": draft,
             "needs_human": needs_human,
-            "confidence": confidence,  # Probability of category only, not draft correctness.
+            "confidence": confidence,  # Category probability or empirical estimate; see reasons.
             "reasons": reasons,
         }
 
