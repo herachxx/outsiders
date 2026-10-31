@@ -100,3 +100,33 @@ def test_batch_reused_ticket_id_keeps_the_result_and_flags_the_conflict(tmp_path
     result = [json.loads(line) for line in out.read_text(encoding='utf-8').splitlines()]
     assert all('error' not in r for r in result)
     assert 'history_identity_conflict' in result[1]['reasons']
+
+
+def test_near_copies_from_one_reporter_count_as_the_same_problem_but_other_topics_do_not():
+    from app.history import History
+    from app.schemas import TriageRequest
+
+    def req(text, reporter='r1', target='bad'):
+        return TriageRequest(kind='complaint', reporter_hash=reporter, reported_hash=target,
+                             messages=[{'role': 'player', 'text': text}])
+    history = History()
+    base = 'игрок оскорбил меня и мою семью в общем чате'
+    assert history.observe(req(base), 'a', 1000.0) == 1
+    assert history.observe(req(base + ' пожалуйста накажите'), 'b', 1100.0) == 2          # near copy
+    assert history.observe(req('он читер летает по воздуху над банком'), 'c', 1200.0) == 1   # another problem
+    assert history.observe(req(base, reporter='r2'), 'd', 1300.0) == 1                       # another reporter
+    assert history.observe(req(base), 'e', 1400.0) == 3
+    assert history.observe(req(base), 'f', 1000.0 + 3600 + 1) == 3                           # the first copy (t=1000) fell out of the hour
+    assert history.observe(req('ау'), 'g', 1500.0) == 1 and history.observe(req('ау'), 'h', 1501.0) == 2   # exact short repeats
+
+
+def test_old_history_database_is_upgraded(tmp_path):
+    import sqlite3
+    from app.history import History
+    path = tmp_path / 'old.sqlite'
+    connection = sqlite3.connect(path)
+    connection.execute('CREATE TABLE history (id TEXT PRIMARY KEY, ts REAL, problem TEXT, count INTEGER)')
+    connection.commit()
+    connection.close()
+    history = History(str(path))
+    assert [row[1] for row in history.connection.execute('PRAGMA table_info(history)')][-2:] == ['scope', 'tokens']
