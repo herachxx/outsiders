@@ -113,7 +113,6 @@ function setServiceState(kind, text) {
   const chip = $('#status-chip'); chip.dataset.state = kind;
   $('#status-text').textContent = text || { ok: 'Помощник работает', warn: 'Помощник в ручном режиме', error: 'Нет связи с сервисом', loading: 'Проверяем помощника' }[kind];
   const banner = $('#banner');
-  if (kind === 'demo') { banner.hidden = false; banner.className = 'banner info'; banner.replaceChildren(h('span', { text: 'Демо-режим: помощник работает на условных правилах, пункты в ответах не официальные. Для настоящей работы загрузите rules.json. ' }), h('button', { type: 'button', class: 'link-btn', text: 'Загрузить rules.json', onclick: openHelp })); return; }
   if (kind === 'warn') { banner.hidden = false; banner.className = 'banner'; banner.replaceChildren(h('span', { text: 'Правила игры не загружены, поэтому помощник не разбирает обращения. ' }), h('button', { type: 'button', class: 'link-btn', text: 'Загрузить rules.json', onclick: openHelp })); }
   else if (kind === 'error') { banner.hidden = false; banner.className = 'banner error'; banner.textContent = 'Нет связи с сервисом. Данные на экране могут быть устаревшими.'; }
   else banner.hidden = true;
@@ -123,9 +122,8 @@ async function refreshStatus() {
     const data = await (await fetch('/api/status', { credentials: 'same-origin' })).json();
     state.status = data;
     $('#rules-box').hidden = data.rules_loaded && !data.demo;
-    if (data.demo) { setServiceState('demo', 'Демо-режим · условные правила'); renderLive(); return; }
     if (!data.rules_loaded) setServiceState('warn');
-    else setServiceState('ok', 'Помощник работает · ' + MODE[data.mode]);
+    else setServiceState('ok', data.demo ? 'Помощник работает' : 'Помощник работает · ' + MODE[data.mode]);
     renderLive();
   } catch { setServiceState('error'); }
 }

@@ -16,6 +16,6 @@ document.getElementById('setup-form').addEventListener('submit', async event => 
       const data=await res.json().catch(()=>({}));
       throw Error(data.detail||'Не получилось сохранить пароль. Попробуйте снова.');
     }
-    location.replace('/admin');
+    location.replace('/');
   } catch(exc){error.textContent=exc.message;button.disabled=false;}
 });
