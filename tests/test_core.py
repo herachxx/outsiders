@@ -32,6 +32,21 @@ def test_rule_field_hint_only_applies_when_text_names_no_category():
     assert service.triage(ticket("оск родни", rule_refs_raw="5.2"))["category"] == "complaint.insult"
 
 
+def test_short_report_forms_are_classified_by_intent():
+    service = TriageService(RuleIndex.from_data(RULES))
+    cases = {
+        "352 айди чит": "report.complaint",
+        "70 dm": "report.complaint",
+        "переверните пожалуйста машину": "report.help",
+        "откройте дверь": "report.help",
+        "админ в сети?": "report.question",
+        "помогите": "report.offtopic",
+        "+": "report.offtopic",
+    }
+    for text, expected in cases.items():
+        assert service.triage(ticket(text, kind="report"))["category"] == expected, text
+
+
 def test_slang_abbreviations_are_classified_not_other():
     service = TriageService(RuleIndex.from_data(RULES))
     cases = {
