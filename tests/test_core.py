@@ -23,6 +23,22 @@ def ticket(text, kind="complaint", **extra):
     return {"kind": kind, "messages": [{"role": "player", "text": text}], **extra}
 
 
+def test_slang_abbreviations_are_classified_not_other():
+    service = TriageService(RuleIndex.from_data(RULES))
+    cases = {
+        "оск родни": "complaint.insult",
+        "osk": "complaint.insult",
+        "он обзывает меня": "complaint.insult",
+        "пользуется софтом": "complaint.cheat",
+        "работаю и меня просто так убивает игрок": "complaint.dm",
+        "меня застрелил какой-то чел": "complaint.dm",
+        "не согласен": "complaint.other",
+        "костер": "complaint.other",
+    }
+    for text, expected in cases.items():
+        assert service.triage(ticket(text))["category"] == expected, text
+
+
 def test_rule_reference_requires_section_when_ambiguous():
     index = RuleIndex.from_data(RULES)
     assert index.resolve("2.1") is None
