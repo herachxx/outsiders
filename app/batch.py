@@ -14,17 +14,53 @@ from .submission import to_submission
 from .classifier import CategoryClassifier
 
 
+TEXT_FIELDS = ('region', 'server_lang', 'rule_refs_raw', 'reporter_hash', 'reported_hash', 'reported_nick')
+ROLES = ('player', 'reported_player', 'admin')
+
+
+def _count(value) -> int:
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def coerce_ticket(raw) -> dict:
+    """Best-effort clean-up of a batch record; the strict HTTP contract is unchanged.
+
+    Unknown fields (including exported outcomes) are dropped, numbers are coerced, over-long text and message
+    lists are cut and a missing player message becomes an empty one, so odd records still get a safe result.
+    Records without a valid kind or message list remain errors.
+    """
+    if not isinstance(raw, dict) or raw.get('kind') not in ('complaint', 'report') or not isinstance(raw.get('messages'), list):
+        raise ValueError('Unusable ticket')
+    messages = []
+    for message in raw['messages']:
+        if not isinstance(message, dict) or message.get('role') not in ROLES:
+            continue
+        text = message.get('text')
+        ts = message.get('ts')
+        messages.append({'role': message['role'], 'text': text[:20000] if isinstance(text, str) else '',
+                         'ts': ts if isinstance(ts, str) else None, 'attachments': _count(message.get('attachments'))})
+    players = [m for m in messages if m['role'] == 'player']
+    messages = messages[:100]
+    if not players:
+        messages = [{'role': 'player', 'text': '', 'ts': None, 'attachments': 0}] + messages[:99]
+    elif not any(m['role'] == 'player' for m in messages):
+        messages[-1] = players[0]
+    ticket = {'kind': raw['kind'], 'messages': messages, 'images_count': _count(raw.get('images_count'))}
+    for field in TEXT_FIELDS:
+        if isinstance(raw.get(field), str):
+            ticket[field] = raw[field]
+    return ticket
+
+
 def _predict_lines(lines: Iterable[str], service: TriageService, format: str = 'submission') -> Iterator[dict]:
     if format not in ('submission', 'internal'):
         raise ValueError('Unknown output format')
     for line in lines:
         try:
-            payload = json.loads(line)
-            if isinstance(payload, dict):
-                payload = {k: v for k, v in payload.items() if k not in {
-                    'ticket_id', 'created_at', 'lang', 'status', 'verdict', 'punishment',
-                    'violation', 'category', 'priority'}}
-            request = TriageRequest.model_validate(payload)
+            request = TriageRequest.model_validate(coerce_ticket(json.loads(line)))
         except (json.JSONDecodeError, ValidationError, TypeError, ValueError):
             yield {"error": "invalid_input"}
             continue

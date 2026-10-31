@@ -64,3 +64,29 @@ def test_historical_labels_do_not_change_batch_prediction():
     service = TriageService(RuleIndex([]))
     historical = {**request(), 'verdict': 'approved', 'punishment': 'SECRET', 'ticket_id': 'SECRET'}
     assert list(predict_lines([json.dumps(historical)], service)) == list(predict_lines([json.dumps(request())], service))
+
+
+def test_batch_is_tolerant_to_odd_records_but_http_contract_stays_strict():
+    import json
+    from app.batch import coerce_ticket, predict_lines
+    from app.core import TriageService
+    from app.rules import RuleIndex
+    service = TriageService(RuleIndex([]))
+    odd = [
+        {'kind': 'report', 'messages': [{'role': 'player', 'text': 'где автошкола?'}], 'unknown_field': {'x': 1}},
+        {'kind': 'report', 'images_count': '2', 'messages': [{'role': 'player', 'text': 'привет'}]},
+        {'kind': 'complaint', 'images_count': None, 'region': None, 'messages': [{'role': 'player', 'text': 'я' * 30000}]},
+        {'kind': 'complaint', 'messages': [{'role': 'admin', 'text': 'только админ'}]},
+        {'kind': 'complaint', 'messages': [{'role': 'player', 'text': 'оск'}] * 150},
+        {'kind': 'report', 'messages': [{'role': 'player', 'text': None}, {'role': 'robot', 'text': 'x'}]},
+    ]
+    out = list(predict_lines([json.dumps(o, ensure_ascii=False) for o in odd], service))
+    assert len(out) == len(odd) and not any('error' in row for row in out)
+    assert out[0]['category'] == 'report.question'
+    assert out[3]['category'] == 'complaint.invalid' and out[5]['category'] == 'report.offtopic'
+    ticket = coerce_ticket(odd[2])
+    assert len(ticket['messages'][0]['text']) == 20000 and ticket['images_count'] == 0 and 'region' not in ticket
+    assert len(coerce_ticket(odd[4])['messages']) == 100
+    for unusable in ({'kind': 'other', 'messages': []}, {'kind': 'report'}, {'kind': 'report', 'messages': 'x'}, [], None):
+        bad = list(predict_lines([json.dumps(unusable)], service))
+        assert bad == [{'error': 'invalid_input'}]
