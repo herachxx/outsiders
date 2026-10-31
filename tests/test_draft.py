@@ -67,4 +67,5 @@ def test_each_complaint_type_has_its_own_question_and_review_note(lang):
         assert phrases[key] in texts[key] and phrases['review'] in texts[key]
     assert len(set(texts.values())) == len(SPECIFIC_COMPLAINTS)
     other = build_draft(request(), 'complaint.other', lang, False, [])['text']
-    assert phrases['complaint'] in other and phrases['review'] not in other
+    assert phrases['complaint'] in other
+    assert not any(phrases[key] in other for key in SPECIFIC_COMPLAINTS)
