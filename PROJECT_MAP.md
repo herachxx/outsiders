@@ -1,5 +1,7 @@
 # Карта проекта
 
+Исправления аудита main: train проверяет holdout также для extra_rows и передаёт seed manifest загрузчику weak labels; support/store атомарно обновляет счётчик вложений, результат, версию и подтверждение; API разрешает интеграцию без ключа только с loopback. Тесты: test_classifier, test_weak_labels, test_support_workflow, test_integration. Подробности — docs/training.md, player-ui.md, integration.md.
+
 Confidence: core различает причины `confidence_empirical` и `classifier_calibrated`; эмпирическая таблица не выдаётся за калибровку модели. Регрессии — tests/test_confidence.py. Последние параллельные изменения согласованы на уровне тестов; человеческая оценка качества по-прежнему нужна.
 
 Подсказки категории из rule_refs_raw: числовые REF_HINTS в core используют границы полного номера; 15.2/5.20/5.2.1 не считаются 5.2. Поле остаётся утверждением игрока, не доказанной цитатой. Проверки — tests/test_rule_hints.py.

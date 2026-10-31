@@ -19,7 +19,7 @@ RECORD = {
 
 
 def client():
-    return TestClient(create_app(TriageService(RuleIndex.from_data(RULES))))
+    return TestClient(create_app(TriageService(RuleIndex.from_data(RULES))), client=('127.0.0.1', 50000))
 
 
 def test_exported_record_is_accepted_and_outcome_fields_are_ignored():
@@ -45,6 +45,16 @@ def test_api_key_is_enforced_when_configured(monkeypatch):
     assert app_client.post('/integration/ticket', json=RECORD).status_code == 401
     assert app_client.post('/integration/ticket', json=RECORD, headers={'X-API-Key': 'wrong'}).status_code == 401
     assert app_client.post('/integration/ticket', json=RECORD, headers={'X-API-Key': 'secret-key'}).status_code == 200
+
+
+def test_remote_integration_requires_key_but_local_remains_simple(monkeypatch):
+    monkeypatch.delenv('GRAND_API_KEY', raising=False)
+    app=create_app(TriageService(RuleIndex.from_data(RULES)))
+    remote=TestClient(app,client=('192.0.2.10',50000))
+    assert remote.post('/integration/ticket',json=RECORD).status_code==503
+    assert remote.post('/integration/decision',json={'ticket_id':'x','action':'approved'}).status_code==503
+    assert remote.get('/integration/decisions/stats').status_code==503
+    assert client().post('/integration/ticket',json=RECORD).status_code==200
 
 
 def test_no_rules_means_unavailable():

@@ -43,9 +43,17 @@ def create_app(service: TriageService | None = None) -> FastAPI:
         from scripts.sample_for_labeling import private_path
         from .decisions import Decisions
         decisions = Decisions(str(private_path(decisions_path)))
-    api_key = os.environ.get('GRAND_API_KEY')
+    api_key = os.environ.get('GRAND_API_KEY', '').strip()
 
-    def check_key(x_api_key):
+    def check_key(x_api_key, request):
+        if not api_key:
+            from ipaddress import ip_address
+            try:
+                local = request.client is not None and ip_address(request.client.host).is_loopback
+            except ValueError:
+                local = False
+            if not local:
+                raise HTTPException(status_code=503, detail='Configure GRAND_API_KEY for remote integration access')
         if api_key and not (x_api_key and hmac.compare_digest(x_api_key, api_key)):
             raise HTTPException(status_code=401, detail='Invalid API key')
 
@@ -132,10 +140,10 @@ def create_app(service: TriageService | None = None) -> FastAPI:
         return to_submission(result) if format == 'submission' else result.model_dump()
 
     @app.post('/integration/ticket')
-    def integration_ticket(ticket: dict = Body(...), format: Literal['submission', 'internal'] = 'submission',
+    def integration_ticket(http_request: Request, ticket: dict = Body(...), format: Literal['submission', 'internal'] = 'submission',
                            x_api_key: str | None = Header(default=None)) -> dict:
         """Accept a Grand Mobile ticket record as exported (outcome fields are ignored), return triage only."""
-        check_key(x_api_key)
+        check_key(x_api_key, http_request)
         if not service.rules.rules:
             raise HTTPException(status_code=503, detail='Rules are not loaded')
         ticket_id = ticket.get('ticket_id')
@@ -171,9 +179,9 @@ def create_app(service: TriageService | None = None) -> FastAPI:
         priority: Literal['p0', 'p1', 'p2', 'p3'] | None = None
 
     @app.post('/integration/decision')
-    def integration_decision(body: DecisionRequest, x_api_key: str | None = Header(default=None)) -> dict:
+    def integration_decision(body: DecisionRequest, http_request: Request, x_api_key: str | None = Header(default=None)) -> dict:
         """Record what the administrator did with the service output: approve, edit or reject."""
-        check_key(x_api_key)
+        check_key(x_api_key, http_request)
         if decisions is None:
             raise HTTPException(status_code=503, detail='Decision log is not configured')
         from typing import get_args
@@ -189,8 +197,8 @@ def create_app(service: TriageService | None = None) -> FastAPI:
         return {'ticket_id': body.ticket_id, 'recorded': body.action}
 
     @app.get('/integration/decisions/stats')
-    def integration_stats(x_api_key: str | None = Header(default=None)) -> dict:
-        check_key(x_api_key)
+    def integration_stats(http_request: Request, x_api_key: str | None = Header(default=None)) -> dict:
+        check_key(x_api_key, http_request)
         if decisions is None:
             raise HTTPException(status_code=503, detail='Decision log is not configured')
         return decisions.stats()
