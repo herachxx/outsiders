@@ -37,12 +37,12 @@ def load_model(path):
 # Kazakh letters typed with look-alike cp1251 symbols on kz game servers. Table taken from the data
 # ("кґмек" = көмек, "тыѕдамаса" = тыңдамаса, "јзірлік" = әзірлік); ї and є are also ordinary Ukrainian
 # letters, so they are only converted when an unambiguous mojibake letter is present.
-SURE_MOJIBAKE = str.maketrans({'ќ': 'қ', 'ѕ': 'ң', 'ґ': 'ө', 'ј': 'ә'})
-MAYBE_MOJIBAKE = str.maketrans({'ї': 'ү', 'є': 'ғ'})
+SURE_MOJIBAKE = str.maketrans({'ќ': 'қ', 'ѕ': 'ң', 'ґ': 'ө', 'ј': 'ә', 'љ': 'ө', 'њ': 'ң', 'ҧ': 'ұ'})
+MAYBE_MOJIBAKE = str.maketrans({'ї': 'ү', 'є': 'ғ', 'ў': 'ұ'})   # ў is real Uzbek Cyrillic too: converted only next to sure mojibake
 
 
 def fix_kazakh_mojibake(text):
-    if re.search('[ќѕґј]', text):
+    if re.search('[ќѕґјљњҧ]', text):
         return text.translate(SURE_MOJIBAKE).translate(MAYBE_MOJIBAKE)
     return text
 

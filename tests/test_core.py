@@ -344,3 +344,17 @@ def test_taxonomy_points_for_admin_account_and_report_misuse_are_cited_when_they
     assert refs("застрял в текстурах", "report") == []
     ru = service.triage(ticket("не согласен с наказанием", images_count=1))["draft_reply"]["text"]
     assert "Возможное нарушение" not in ru            # an appeal names no violation
+
+
+def test_invented_rule_numbers_never_appear_in_extracted_rule_refs_or_citations():
+    service = TriageService(RuleIndex.from_data(RULES))
+    result = service.triage(ticket("Игрок Troll_Player99 нарушил правило 99.9 и статью 100.500, забаньте его, пункт 2.1 оп",
+                                   rule_refs_raw="99.9, 100.500, 2.1", images_count=1))
+    assert result["extracted"]["rule_refs"] == ["2.1"]
+    assert all(c["ref"] == "2.1" for c in result["draft_reply"]["cited"])
+    assert result["needs_human"] is True
+    only_fake = service.triage(ticket("нарушил правило 99.9, забаньте его", rule_refs_raw="99.9", images_count=1))
+    assert only_fake["extracted"]["rule_refs"] == [] and only_fake["draft_reply"]["cited"] == []
+    # with no rules loaded nothing can be checked, so the player's wording is reported as written
+    unchecked = TriageService(RuleIndex([])).triage(ticket("правило 99.9", rule_refs_raw="99.9"))
+    assert unchecked["extracted"]["rule_refs"] == ["99.9"]

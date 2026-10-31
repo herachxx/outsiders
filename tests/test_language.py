@@ -54,3 +54,8 @@ def test_cp1251_look_alike_kazakh_letters_are_recognised_but_ukrainian_is_not_co
     assert detect('сервеге кіріп шыќќаннан кейін кґлігімді таппай ќалдым').lang == 'kk'
     ukrainian = detect('оск матері в голосової чат, їде зброї поліції')
     assert ukrainian.lang == 'und' and ukrainian.uncertain
+
+
+def test_extra_cp1251_look_alike_letters_from_the_task_example():
+    text = 'Квест жҧмыс істемейді жјне маркер шыќпады, текстурада тўрып ќалдым, кљмектесіѕіздерші'
+    assert detect(text).lang == 'kk'

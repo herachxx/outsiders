@@ -38,6 +38,15 @@ def is_contentless(text: str) -> bool:
     return len(re.findall('[а-яёa-z]', re.sub(r'<\w+>|\b\d+(?:[.,]\d+)*\b|\b(?:оп|op|gz|ппо)\b', ' ', text))) < 5
 
 
+def existing_refs(refs: list[str], rules) -> list[str]:
+    """Points the player named that really exist in the rules; invented ones (99.9, 100.500) are dropped.
+
+    Without a loaded rule set nothing can be checked, so the list is returned as written.
+    """
+    known = {rule.ref for rule in rules.rules}
+    return [ref for ref in refs if ref in known] if known else refs
+
+
 CITE_MIN_CONFIDENCE = 0.7  # a wrong category would make the cited point irrelevant
 
 
@@ -188,7 +197,7 @@ class TriageService:
             "is_spam_or_duplicate": False,
             "extracted": {
                 "nickname": (request.reported_nick or extract_nickname(player_text)) if request.kind == "complaint" else None,
-                "rule_refs": claimed_refs,
+                "rule_refs": existing_refs(claimed_refs, self.rules),
                 "has_evidence": has_attachments,
                 "server": extract_server(search_text),
                 "claims": [fact.value for fact in facts if fact.kind == 'claim'],
