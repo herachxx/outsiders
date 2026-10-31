@@ -120,6 +120,18 @@ def test_model_cannot_downgrade_sensitive_heuristic_route():
     assert result['priority'] == 'p0'
 
 
+def test_specific_complaint_rule_beats_model_but_model_decides_unknown_text():
+    class FixedModel:
+        def predict(self, kind, text):
+            return 'complaint.scam'
+    service = TriageService(RuleIndex([]), classifier=FixedModel())
+    def category(text, **extra):
+        return service.triage(dict(kind='complaint', messages=[dict(role='player', text=text)], **extra))['category']
+    assert category('оск родни') == 'complaint.insult'
+    assert category('<url>', rule_refs_raw='5.2 оп') == 'complaint.cheat'
+    assert category('<url>', rule_refs_raw='жб') == 'complaint.scam'
+
+
 def test_training_ignores_outcomes_and_post_admin_text():
     tasks, manifest, gold = package()
     _, expected = train_classifier(tasks, manifest, gold)
