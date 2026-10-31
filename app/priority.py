@@ -30,12 +30,23 @@ class RouteDecision:
     reasons: tuple[str, ...]
 
 
+SANCTION_REASON = 'решение о наказании подтверждает администратор'
+
+
 def route(category: str, text: str, has_attachments: bool = False) -> RouteDecision:
     text = text.casefold().replace('ё', 'е')
     reasons = ['policy_draft']
-    # taxonomy.needs_human_always (account, payment, admin complaints) plus stuck/bug requests;
-    # other complaints are only escalated by the signals below.
+    # Case PDF: payments, ban appeals and hack suspicion always go to a human, and a draft may not promise
+    # an unban, a refund or a sanction for another player, so such topics are flagged. A complaint asks for
+    # a sanction by definition (the PDF example: needs_human with this exact reason); a ticket that is not
+    # a real complaint (complaint.invalid) asks for none.
     human = category in MANDATORY_HUMAN or category == 'report.help'
+    if category.startswith('complaint.') and category != 'complaint.invalid':
+        human = True
+        reasons.append(SANCTION_REASON)
+    if re.search(r'верни(?:те)? (?:мне |мои |деньги|имущество|донат)|возврат|возмест|компенсац|забаньте|накажите|выдайте бан|снимите (?:бан|наказ)', text):
+        human = True
+        reasons.append('sanction_or_refund_requested')
     if category in MANDATORY_HUMAN:
         reasons.append('mandatory_human')
     urgent = bool(multilingual_sensitive_category(text) or re.search(r'взлом|не могу войти|потер.{0,15}доступ|оплат|платеж|деньги спис|массов.{0,12}баг|угроз.{0,20}(жизн|вне игры)', text))

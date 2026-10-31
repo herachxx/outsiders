@@ -49,7 +49,16 @@ class Extracted(StrictModel):
     nickname: str | None
     rule_refs: list[str]
     has_evidence: bool
+    server: str | None = None
     claims: list[str]
+
+
+class SubmissionExtracted(StrictModel):
+    """The `extracted` object exactly as in the case PDF (no internal claims)."""
+    nickname: str | None
+    rule_refs: list[str]
+    has_evidence: bool
+    server: str | None = None
 
 
 class Draft(StrictModel):
@@ -77,4 +86,5 @@ class SubmissionDraft(StrictModel):
 
 
 class SubmissionResponse(TriageResponse):
+    extracted: SubmissionExtracted
     draft_reply: SubmissionDraft

@@ -22,10 +22,19 @@ def test_attachments_do_not_change_priority_because_every_complaint_has_them():
     assert route('complaint.dm', 'убил', has_attachments=True).priority == 'p2'
     assert route('complaint.invalid', 'жб', has_attachments=True).priority == 'p3'
     assert route('complaint.cheat', 'чит', has_attachments=True).priority == 'p1'
-    assert not route('complaint.insult', 'Оскорбление', has_attachments=True).needs_human
+    # A complaint asks for a sanction against another player: always confirmed by an administrator (case PDF).
+    assert route('complaint.insult', 'Оскорбление', has_attachments=True).needs_human
+    assert 'решение о наказании подтверждает администратор' in route('complaint.dm', 'убил').reasons
+    assert not route('complaint.invalid', 'жб').needs_human
     assert route('complaint.admin', 'не согласен', has_attachments=True).needs_human
     assert route('complaint.cheat', 'Прошу разбан', has_attachments=True).needs_human
 
 
 def test_mechanics_question_stays_low_priority():
     assert route('report.question', 'Где находится магазин?').priority == 'p3'
+
+
+def test_refund_unban_and_punishment_demands_go_to_a_human_even_in_reports():
+    for text in ('верните мои деньги за донат', 'разбаньте меня пожалуйста', 'забаньте этого игрока', 'прошу компенсацию'):
+        result = route('report.question', text)
+        assert result.needs_human, text

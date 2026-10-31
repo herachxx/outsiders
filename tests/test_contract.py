@@ -90,3 +90,27 @@ def test_batch_is_tolerant_to_odd_records_but_http_contract_stays_strict():
     for unusable in ({'kind': 'other', 'messages': []}, {'kind': 'report'}, {'kind': 'report', 'messages': 'x'}, [], None):
         bad = list(predict_lines([json.dumps(unusable)], service))
         assert bad == [{'error': 'invalid_input'}]
+
+
+def test_submission_extracted_matches_the_case_pdf_example():
+    from app.core import TriageService
+    from app.rules import RuleIndex
+    from app.schemas import TriageResponse
+    from app.submission import to_submission
+    rules = {"rules": [{"id": 30, "category": "Общие", "points": [
+        {"ref": "2.1", "text": "Запрещено прямое оскорбление личности игрока и его родственников в чатах."}]}]}
+    request = {"kind": "complaint", "messages": [{"role": "player", "attachments": 2,
+               "text": "Arman_Petrov оскорблял меня и мою семью в чате, скрины есть, 2.1 ОП"}]}
+    out = to_submission(TriageResponse.model_validate(TriageService(RuleIndex.from_data(rules)).triage(request)))
+    assert set(out) == {'lang', 'category', 'priority', 'is_spam_or_duplicate', 'extracted', 'draft_reply',
+                        'needs_human', 'confidence', 'reasons'}
+    assert out['extracted'] == {'nickname': 'Arman_Petrov', 'rule_refs': ['2.1'], 'has_evidence': True, 'server': None}
+    assert out['category'] == 'complaint.insult' and out['priority'] == 'p2'
+    assert out['draft_reply']['cited'] == ['2.1'] and set(out['draft_reply']) == {'lang', 'text', 'cited'}
+    assert 'Укажите никнейм' not in out['draft_reply']['text']
+
+
+def test_server_number_is_extracted_from_text_only_when_specific():
+    from app.extract import extract_server
+    assert extract_server('на 12-м сервере застрял') == '12' and extract_server('сервер 17') == '17'
+    assert extract_server('12 серверов') is None and extract_server('просто текст') is None

@@ -3,6 +3,9 @@ import json
 from functools import lru_cache
 from importlib.resources import files
 
+from .extract import extract_nickname, extract_server
+from .preprocess import normalize, player_text
+
 
 @lru_cache(maxsize=1)
 def templates():
@@ -10,6 +13,10 @@ def templates():
 
 
 SPECIFIC_COMPLAINTS = ('insult', 'cheat', 'dm', 'scam', 'rmt_ads', 'invalid')
+
+
+def _text(request):
+    return player_text(request.messages)
 
 
 def draft_language(request, lang):
@@ -38,12 +45,12 @@ def build_draft(request, category, lang, has_evidence, cited):
         parts.append(phrases['review'])
     if is_complaint:
         parts.append(phrases['evidence_present' if has_evidence else 'evidence_missing'])
-        if not request.reported_nick and not request.reported_hash:
+        if not request.reported_nick and not request.reported_hash and not extract_nickname(_text(request)):
             parts.append(phrases['target_missing'])
     # Dataset region codes locate the audience, not an individual game server.
     # The current UI also uses this field for an explicitly entered server.
     region = (request.region or '').strip().casefold()
-    if not region or region in {'cis', 'uz', 'kz'}:
+    if (not region or region in {'cis', 'uz', 'kz'}) and not extract_server(normalize(_text(request))):
         parts.append(phrases['server_missing'])
     if cited:
         refs = ', '.join(dict.fromkeys(f"{c['section_id']}/{c['ref']}" for c in cited))

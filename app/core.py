@@ -9,6 +9,7 @@ from .preprocess import before_admin, player_text as extract_player_text, normal
 from .language import detect, language
 from .facts import extract_facts
 from .confidence import lookup
+from .extract import TEXT_REF, extract_nickname, extract_server
 from .handling import decide
 from .draft import build_draft
 from .safety import check_draft
@@ -47,7 +48,13 @@ def category_rule_ref(category: str, text: str) -> str | None:
     if category == 'complaint.admin':
         return '1.3.1'
     if category == 'complaint.dm':
-        return '1.1' if re.search(r'зз|зел[её]н|gz|гз|больниц', text) else None
+        if re.search(r'\bзз\b|зел[её]н|\bgz\b|\bгз\b|больниц', text):
+            return '1.1'
+        if re.search(r'уход\w* от|\bафк\b|ливн|вышел из игры|ушел от|убежал от', text):
+            return '5.3'
+        if re.search(r'\bдом[ауе]?\b|квартир|подъезд|у входа', text):
+            return '5.4'
+        return None
     if category == 'complaint.cheat':
         return '5.2'
     if category == 'complaint.scam':
@@ -95,6 +102,11 @@ class TriageService:
         priority = routing.priority
         rule_ref = (request.rule_refs_raw or "").strip()
         claimed_refs = re.findall(r"\b\d+(?:\.\d+){1,2}\b", rule_ref)
+        # A point written in the text ("2.1 ОП", "пункт 5.2") counts as a claimed point as well.
+        for groups in re.findall(TEXT_REF, search_text):
+            ref = next(g for g in groups if g)
+            if ref not in claimed_refs:
+                claimed_refs.append(ref)
         reasons = ["history_unavailable", *routing.reasons]
         confidence = 0.0
         if predicted and not safety_override and hasattr(self.classifier, 'confidence'):
@@ -161,9 +173,10 @@ class TriageService:
             "priority": priority,
             "is_spam_or_duplicate": False,
             "extracted": {
-                "nickname": request.reported_nick if request.kind == "complaint" else None,
+                "nickname": (request.reported_nick or extract_nickname(player_text)) if request.kind == "complaint" else None,
                 "rule_refs": claimed_refs,
                 "has_evidence": has_attachments,
+                "server": extract_server(search_text),
                 "claims": [fact.value for fact in facts if fact.kind == 'claim'],
             },
             "draft_reply": draft,

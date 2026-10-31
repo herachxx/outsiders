@@ -296,3 +296,30 @@ def test_claimed_dm_point_still_uses_topic_search_next_to_green_zone_special_cas
     service = TriageService(RuleIndex.from_data(data))
     result = service.triage(ticket("убил меня у дома", images_count=1, rule_refs_raw="5.4"))
     assert [(c["section_id"], c["ref"]) for c in result["draft_reply"]["cited"]] == [(30, "5.4")]
+
+
+def test_source_files_contain_no_stray_control_characters():
+    # A regex typed as '\b' in a normal string silently becomes a backspace; keep that out of the code base.
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    for path in list((root / 'app').rglob('*.py')) + list((root / 'scripts').glob('*.py')):
+        bad = [c for c in path.read_text(encoding='utf-8') if ord(c) < 32 and c not in '\t\n\r']
+        assert not bad, f'{path.name}: {bad[:3]!r}'
+
+
+def test_dm_cites_the_taxonomy_point_that_fits_the_situation():
+    rules = {"rules": [
+        {"id": 30, "category": "Общие правила", "points": [
+            {"ref": "5.3", "text": "Игрок обязан доводить начатую RP-ситуацию до логического завершения. Запрещено намеренно покидать её."},
+            {"ref": "5.4", "text": "Запрещено убийство или нанесение урона жильцам и или гостям дома у входа в дом."}]},
+        {"id": 32, "category": "Зелёная зона", "points": [
+            {"ref": "1.1", "text": "Запрещены убийства, а также нанесение урона в Зелёной Зоне [GZ]."}]}]}
+    service = TriageService(RuleIndex.from_data(rules))
+    def cited(text):
+        r = service.triage(ticket(text, images_count=1))
+        assert r["category"] == "complaint.dm", text
+        return [(c["section_id"], c["ref"]) for c in r["draft_reply"]["cited"]]
+    assert cited("убил меня у дома без причины") == [(30, "5.4")]
+    assert cited("уход от рп на погоне убил") == [(30, "5.3")]
+    assert cited("убил в зз возле больницы") == [(32, "1.1")]
+    assert cited("просто убил меня на трассе") == []
