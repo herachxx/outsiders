@@ -17,7 +17,7 @@ from app.schemas import TriageRequest
 from scripts.sample_for_labeling import private_path, read_records
 
 NICK = re.compile(r'\b[A-Za-zА-Яа-я]+_[A-Za-zА-Яа-я]+\d*\b')
-PLACEHOLDERS = re.compile(r'<(?:digits|url|email|handle)>|#?\d+')
+PLACEHOLDERS = re.compile(r'#?<(?:digits|url|email|handle)>|#?\d+')
 STOP = set('и в не на я с что а по но у за из к от до или ли да как так для это то же ты он она они мы вы меня мне пж '
            'пожалуйста админ помогите помоги привет здравствуйте тут там очень еще уже'.split())
 
