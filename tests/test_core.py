@@ -138,7 +138,9 @@ def test_unrelated_rule_is_not_cited_even_if_it_exists():
     result = TriageService(RuleIndex.from_data(RULES)).triage(
         ticket("Он использует читы", rule_refs_raw="2.1")
     )
-    assert result["draft_reply"]["cited"] == []
+    # The claimed 2.1 is about insults and is never cited; the category point 5.2 (cheats) is.
+    assert [c["ref"] for c in result["draft_reply"]["cited"]] == ["5.2"]
+    assert "citation_from_category" in result["reasons"]
 
 
 def test_prompt_injection_cannot_create_a_rule():

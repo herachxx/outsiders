@@ -32,6 +32,22 @@ CATEGORY_PATTERNS = {
     ],
 }
 
+CITE_MIN_CONFIDENCE = 0.7  # a wrong category would make the cited point irrelevant
+
+
+def category_rule_ref(category: str, text: str) -> str | None:
+    """General taxonomy point for a complaint category; none where no single point fits (dm, admin, other)."""
+    if category == 'complaint.insult':
+        return '2.1'
+    if category == 'complaint.cheat':
+        return '5.2'
+    if category == 'complaint.scam':
+        return '4.2' if re.search(r'вымог|угроз', text) else '4.1'
+    if category == 'complaint.rmt_ads':
+        return '2.3' if re.search(r'реклам', text) else '4.4'
+    return None
+
+
 # Hints from the player-filled rule field; taxonomy rule refs, not verified claims.
 REF_HINTS = [
     ("complaint.dm", r"\bgz\b|\bdm\b|\bдм\b|\bdb\b|\bдб\b|\bsk\b|\bск\b|\btk\b|\bтк\b|(?<![\w.])5\.[34](?![\d.])|\bnrp\b|\bнрп\b|\bурп\b"),
@@ -104,6 +120,13 @@ class TriageService:
             citation = rule.citation()
             if self.rules.validate_citation(citation):
                 cited.append(citation)
+        if not cited and not safety_override and confidence >= CITE_MIN_CONFIDENCE:
+            # Player named no usable point: use the taxonomy point for the category, still unique and relevant.
+            default_ref = category_rule_ref(category, search_text)
+            rule = self.rules.relevant_rule(search_text, category, default_ref) if default_ref else None
+            if rule is not None and self.rules.validate_citation(rule.citation()):
+                cited.append(rule.citation())
+                reasons.append("citation_from_category")
         if rule_ref and not claimed_refs:
             reasons.append("rule_unparsed")
         if request.kind == "complaint":

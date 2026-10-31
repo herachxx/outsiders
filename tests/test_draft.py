@@ -33,7 +33,7 @@ def test_missing_fields_and_evidence_change_draft():
     supplied = build_draft(request(region='server', reported_nick='player'), 'complaint.cheat', 'ru', True, [])['text']
     assert 'Укажите сервер' in empty and 'Укажите никнейм' in empty
     assert 'Укажите сервер' not in supplied and 'Укажите никнейм' not in supplied
-    assert 'ещё не проверено' in supplied
+    assert 'рассмотрит администратор' in supplied
 
 
 def test_unknown_language_uses_server_language_then_russian():
