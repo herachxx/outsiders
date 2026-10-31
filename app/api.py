@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 from .schemas import StrictModel, Draft
 from .support import auth
-from .support.routes import create_routes
+from .support.routes import create_routes, describe_service
 from .support.store import TicketStore
 
 
@@ -202,6 +202,11 @@ def create_app(service: TriageService | None = None) -> FastAPI:
         if decisions is None:
             raise HTTPException(status_code=503, detail='Decision log is not configured')
         return decisions.stats()
+
+    @app.get('/api/status')
+    def assistant_status() -> dict:
+        """Public, always available: is the assistant running, how, and with which rules (no ticket data)."""
+        return describe_service(service)
 
     @app.get("/health")
     def health() -> dict:

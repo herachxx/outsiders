@@ -97,3 +97,5 @@ $('clear-history').addEventListener('click',()=>{if(!confirm(window.GrandI18n?.t
 pickCategory('question');updateNavCount();
 
 const uploadInput=document.getElementById("screenshot-files");if(uploadInput)uploadInput.addEventListener("change",()=>{document.getElementById("file-count").textContent=uploadInput.files.length?`${window.GrandI18n?.tr('Выбрано файлов')||'Выбрано файлов'}: ${uploadInput.files.length}`:(window.GrandI18n?.tr('Файлы не выбраны')||'Файлы не выбраны');});
+
+(async()=>{const box=document.getElementById('assistant-status');if(!box)return;try{const d=await(await fetch('/api/status')).json();box.dataset.state=d.rules_loaded?'ok':'warn';box.textContent=d.rules_loaded?'Помощник работает':'Помощник в ручном режиме: правила не загружены'}catch{box.dataset.state='error';box.textContent='Нет связи с сервисом'}})();

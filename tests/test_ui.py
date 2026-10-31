@@ -15,15 +15,16 @@ def test_ui_assets_are_served_without_external_resources(monkeypatch):
         assert 'Платежи и покупки' in page.text
         assert client.get('/admin', follow_redirects=False).status_code == 303
         assert 'Вход в панель' in client.get('/admin/login').text
+        assert 'Вернуться на страницу игрока' in client.get('/admin/login').text
         assert client.post('/admin/api/login', json={'password':'test-password-secure-123'}).status_code == 200
-        assert 'Ответ и статус' in client.get('/admin').text
-        assert 'role="tablist"' in client.get('/admin').text
-        assert 'toast-region' in client.get('/admin').text
-        assert 'Ручной режим · нет правил' not in client.get('/admin').text
-        assert 'Черновик ответа' in client.get('/admin').text
+        admin = client.get('/admin').text
+        assert 'Ответ игроку' in admin and 'Что понял помощник' in admin
+        assert 'id="toasts"' in admin and 'id="status-chip"' in admin
+        assert 'href="/"' in admin and 'Страница игрока' in admin
+        assert 'Панель оператора' in page.text and 'href="/admin"' in page.text
         assert 'src="https://' not in page.text
-        assert client.get('/ui/app.js').status_code == 200
-        assert client.get('/ui/style.css').status_code == 200
+        assert client.get('/ui/admin.js').status_code == 200
+        assert client.get('/ui/admin.css').status_code == 200
         assert client.get('/ui/player.css').status_code == 200
         assert client.get('/ui/player.js').status_code == 200
         assert client.get('/ui/i18n.js').status_code == 200
