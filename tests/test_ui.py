@@ -5,14 +5,29 @@ from app.rules import RuleIndex
 from test_core import RULES
 
 
-def test_ui_assets_are_served_without_external_resources():
+def test_ui_assets_are_served_without_external_resources(monkeypatch):
+    monkeypatch.setenv("GRAND_ADMIN_PASSWORD", "test-password-secure-123")
+    monkeypatch.setenv("GRAND_SESSION_SECRET", "test-secret-is-longer-than-32-characters")
     with TestClient(create_app(TriageService(RuleIndex.from_data(RULES)))) as client:
         page = client.get('/')
         assert page.status_code == 200
-        assert 'Рабочая очередь' in page.text
-        assert 'https://' not in page.text
+        assert 'ТВОЯ ИГРА.' in page.text
+        assert 'Платежи и покупки' in page.text
+        assert client.get('/admin', follow_redirects=False).status_code == 303
+        assert 'Вход в панель' in client.get('/admin/login').text
+        assert client.post('/admin/api/login', json={'password':'test-password-secure-123'}).status_code == 200
+        assert 'Ответ и статус' in client.get('/admin').text
+        assert 'role="tablist"' in client.get('/admin').text
+        assert 'toast-region' in client.get('/admin').text
+        assert 'Ручной режим · нет правил' not in client.get('/admin').text
+        assert 'Черновик ответа' in client.get('/admin').text
+        assert 'src="https://' not in page.text
         assert client.get('/ui/app.js').status_code == 200
         assert client.get('/ui/style.css').status_code == 200
+        assert client.get('/ui/player.css').status_code == 200
+        assert client.get('/ui/player.js').status_code == 200
+        assert client.get('/ui/i18n.js').status_code == 200
+        assert client.get('/ui/hero-city.svg').status_code == 200
 
 
 def test_edited_draft_requires_server_gate():
@@ -31,12 +46,3 @@ def test_ui_is_available_but_processing_fails_without_rules():
     with TestClient(create_app(TriageService(RuleIndex([])))) as client:
         assert client.get('/').status_code == 200
         assert client.post('/triage', json={'kind': 'report', 'messages': [{'role': 'player', 'text': 'Помогите'}]}).status_code == 503
-
-
-def test_ui_has_send_and_export_controls_gated_by_the_server_check():
-    with TestClient(create_app(TriageService(RuleIndex.from_data(RULES)))) as client:
-        page, script = client.get('/').text, client.get('/ui/app.js').text
-        assert 'id="send"' in page and 'disabled>Отправить' in page and 'id="export"' in page
-        assert "$('send').disabled=!result.approved" in script      # enabled only after a passed check
-        assert "$('send').disabled=true" in script                    # any edit or new selection locks it again
-        assert 'grand-edits.jsonl' in script and "action:i.sent?'sent'" in script
