@@ -1,11 +1,10 @@
 """Fit the empirical confidence table (aggregates only) from labeled train rows; holdout is never read."""
 import argparse
-from collections import Counter, defaultdict
+from collections import defaultdict
 import json
 from pathlib import Path
 
 from app.core import TriageService
-from app.schemas import TriageRequest
 from scripts.sample_for_labeling import read_records
 from scripts.train import make_pipeline, prepare_rows
 
