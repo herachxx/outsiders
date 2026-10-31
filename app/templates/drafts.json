@@ -14,7 +14,14 @@
     "rules": "Пункты правил ({refs}) приведены для проверки применимости администратором.",
     "greeting_complaint": "Здравствуйте! Благодарим за обращение.",
     "greeting_report": "Здравствуйте!",
-    "closing": "С уважением, администрация Grand Mobile."
+    "closing": "С уважением, администрация Grand Mobile.",
+    "insult": "Укажите, где произошло оскорбление (общий, рабочий или голосовой чат) и когда.",
+    "cheat": "Опишите, какое преимущество, по вашему мнению, использует игрок (например, скорость или стрельба через стены), и укажите время.",
+    "dm": "Опишите, как начался конфликт, и укажите время события.",
+    "scam": "Опишите, что и когда передавалось и о чём вы договаривались.",
+    "rmt_ads": "Укажите, где и когда игрок разместил рекламу или предложение.",
+    "invalid": "Опишите суть нарушения, укажите пункт правил и время события.",
+    "review": "Обстоятельства и возможное нарушение должен проверить администратор."
   },
   "kk": {
     "payment": "Төлемді тексеру үшін күнін, сомасын және операция нөмірін көрсетіңіз. Карта деректерін жасырып, түбіртекті тіркеңіз. Операцияны әкімші тексеруі керек.",
@@ -31,7 +38,14 @@
     "rules": "Ереже тармақтарының ({refs}) қолданылуын әкімші тексеруі керек.",
     "greeting_complaint": "Сәлеметсіз бе! Өтінішіңіз үшін рақмет.",
     "greeting_report": "Сәлеметсіз бе!",
-    "closing": "Құрметпен, Grand Mobile әкімшілігі."
+    "closing": "Құрметпен, Grand Mobile әкімшілігі.",
+    "insult": "Қорлау қайда болғанын (жалпы, рөлдік немесе дауыстық чат) және қашан болғанын көрсетіңіз.",
+    "cheat": "Ойыншы қандай артықшылықты, сіздің ойыңызша, пайдаланатынын (мысалы, жылдамдық немесе қабырға арқылы ату) сипаттап, уақытын көрсетіңіз.",
+    "dm": "Қақтығыстың қалай басталғанын сипаттап, оқиға уақытын көрсетіңіз.",
+    "scam": "Не және қашан берілгенін, сіздер нені келіскеніңізді сипаттаңыз.",
+    "rmt_ads": "Ойыншы жарнаманы немесе ұсынысты қайда және қашан орналастырғанын көрсетіңіз.",
+    "invalid": "Бұзушылықтың мәнін сипаттап, ереже тармағын және оқиға уақытын көрсетіңіз.",
+    "review": "Мән-жайды және мүмкін бұзушылықты әкімші тексеруі керек."
   },
   "uz": {
     "payment": "To‘lovni tekshirish uchun sana, summa va operatsiya raqamini ko‘rsating. Karta ma’lumotlarini yashirib, kvitansiyani ilova qiling. Operatsiyani administrator tekshirishi kerak.",
@@ -48,7 +62,14 @@
     "rules": "Qoida bandlarining ({refs}) qo‘llanishini administrator tekshirishi kerak.",
     "greeting_complaint": "Assalomu alaykum! Murojaatingiz uchun rahmat.",
     "greeting_report": "Assalomu alaykum!",
-    "closing": "Hurmat bilan, Grand Mobile ma’muriyati."
+    "closing": "Hurmat bilan, Grand Mobile ma’muriyati.",
+    "insult": "Haqorat qayerda sodir bo‘lganini (umumiy, rolli yoki ovozli chat) va qachon bo‘lganini ko‘rsating.",
+    "cheat": "O‘yinchi qanday ustunlikdan foydalanayotganini (masalan, tezlik yoki devor orqali otish) tasvirlab, vaqtini ko‘rsating.",
+    "dm": "To‘qnashuv qanday boshlanganini tasvirlab, voqea vaqtini ko‘rsating.",
+    "scam": "Nima va qachon berilganini hamda nimaga kelishganingizni tasvirlang.",
+    "rmt_ads": "O‘yinchi reklama yoki taklifni qayerda va qachon joylashtirganini ko‘rsating.",
+    "invalid": "Qoidabuzarlik mohiyatini tasvirlab, qoida bandi va voqea vaqtini ko‘rsating.",
+    "review": "Holat va mumkin bo‘lgan qoidabuzarlikni administrator tekshirishi kerak."
   },
   "en": {
     "payment": "Provide the payment date, amount and transaction reference. Attach a receipt with card details hidden. An administrator needs to check the payment status.",
@@ -65,6 +86,13 @@
     "rules": "An administrator needs to check whether rule references ({refs}) apply.",
     "greeting_complaint": "Hello! Thank you for your report.",
     "greeting_report": "Hello!",
-    "closing": "Kind regards, Grand Mobile administration."
+    "closing": "Kind regards, Grand Mobile administration.",
+    "insult": "Say where the insult happened (public, role-play or voice chat) and when.",
+    "cheat": "Describe which advantage the player seems to use (for example speed or shooting through walls) and the time.",
+    "dm": "Describe how the conflict started and the time of the event.",
+    "scam": "Describe what was handed over, when, and what you agreed on.",
+    "rmt_ads": "Say where and when the player posted the advertisement or offer.",
+    "invalid": "Describe the violation, the rule point and the time of the event.",
+    "review": "An administrator needs to review the circumstances and the possible violation."
   }
 }

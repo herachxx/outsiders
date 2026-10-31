@@ -54,3 +54,17 @@ def test_geographic_region_does_not_count_as_game_server(lang, region):
 def test_explicit_server_still_avoids_duplicate_question():
     result = build_draft(request(region='Server 17'), 'report.help', 'ru', False, [])
     assert 'Укажите сервер' not in result['text']
+
+
+@pytest.mark.parametrize('lang', ['ru', 'kk', 'uz', 'en'])
+def test_each_complaint_type_has_its_own_question_and_review_note(lang):
+    from app.draft import SPECIFIC_COMPLAINTS, templates
+    phrases = templates()[lang]
+    texts = {}
+    for key in SPECIFIC_COMPLAINTS:
+        category = f'complaint.{key}'
+        texts[key] = build_draft(request(), category, lang, False, [])['text']
+        assert phrases[key] in texts[key] and phrases['review'] in texts[key]
+    assert len(set(texts.values())) == len(SPECIFIC_COMPLAINTS)
+    other = build_draft(request(), 'complaint.other', lang, False, [])['text']
+    assert phrases['complaint'] in other and phrases['review'] not in other

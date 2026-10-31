@@ -9,6 +9,9 @@ def templates():
     return json.loads(files('app').joinpath('templates', 'drafts.json').read_text(encoding='utf-8'))
 
 
+SPECIFIC_COMPLAINTS = ('insult', 'cheat', 'dm', 'scam', 'rmt_ads', 'invalid')
+
+
 def draft_language(request, lang):
     """Reply in the detected language; for unknown text use the server language, else Russian (the main audience)."""
     if lang in templates():
@@ -23,12 +26,16 @@ def build_draft(request, category, lang, has_evidence, cited):
     if category == 'complaint.admin':
         key = 'admin'
     elif category.startswith('complaint.') or category == 'report.complaint':
-        key = 'complaint'
+        key = category.removeprefix('complaint.')
+        if key not in SPECIFIC_COMPLAINTS:
+            key = 'complaint'
     else:
         key = category.removeprefix('report.')
-    is_complaint = key in ('complaint', 'admin')
+    is_complaint = key in SPECIFIC_COMPLAINTS or key in ('complaint', 'admin')
     parts = [phrases['greeting_complaint' if is_complaint else 'greeting_report'],
              phrases.get(key, phrases['other'])]
+    if key in SPECIFIC_COMPLAINTS:
+        parts.append(phrases['review'])
     if is_complaint:
         parts.append(phrases['evidence_present' if has_evidence else 'evidence_missing'])
         if not request.reported_nick and not request.reported_hash:
